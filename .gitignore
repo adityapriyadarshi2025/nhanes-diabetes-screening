@@ -1,0 +1,11 @@
+# raw NHANES files stay out (re-download with scripts/download_nhanes.sh); keep their checksums
+data/raw/*
+!data/raw/manifest.csv
+data/processed/
+data/codebooks/
+logs/
+.venv/
+.cache/
+__pycache__/
+.ipynb_checkpoints/
+.DS_Store
