@@ -2,6 +2,26 @@
 
 Newest first. Each entry: what was decided and why.
 
+## 14 Nov 2026 (weeks 2-3, models and freeze)
+
+- **Ladder fitted** with rolling-origin tuning (`src/fit.py`); final models are
+  the third-fold fits, trained on 2007-2014. Settings and validation in
+  `FROZEN.md`.
+- **Gate B finding**: LightGBM, EBM and L1 logistic are within 0.003 AUC out of
+  time, all above the ADA test (0.77 vs 0.735 for HbA1c 5.7%+). Tuning stopped.
+- **Leakage ladder**: a random split does not inflate AUC here (0.759 vs 0.772);
+  counting diagnosed adults as positives (0.816) and adding "told prediabetes"
+  and "blood test in the past 3 years" (0.855) do.
+- **Calibration**: Platt scaling with survey weights on 2015-2016. Out of time
+  the raw models over-predict (observed/expected about 0.87 for 5.7%+), so
+  calibration matters.
+- **Value model**: mean tuned by squared error of log HbA1c.
+- **Cut for time**: survey-weighted training, adversarial validation, the
+  with-race model, the ADA-items-only LightGBM, the fasting-glucose check,
+  the 2021-2023 stress test and the isotonic check.
+- **Website** moves to `docs/`, so GitHub Pages can serve it from the main
+  branch.
+
 ## 19 Oct 2026 (week 1, data checks)
 
 - **Download** done from wwwn.cdc.gov: 72 files and their codebook pages,

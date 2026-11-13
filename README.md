@@ -20,6 +20,11 @@ python scripts/toolchain_check.py      # optional: model export to JavaScript wo
 python -m src.harmonise                # one recoded row per participant; seals the test labels
 python -m src.cohort                   # cohort rules, counts per cycle
 python -m src.explore_week1            # week-1 data checks -> results/week1/
+python -m src.scores                   # baseline flag rates and AUC on 2007-2016
+python -m src.fit                      # rolling-origin tuning, final models, calibration -> models/
+python -m src.ladder                   # leakage ladder on 2007-2016
+python -m src.test_once                # one-time test on 2017-March 2020, after FROZEN.md is committed
+python -m src.export_web               # JSON for the website -> docs/data/
 ```
 
 ## Layout
@@ -27,12 +32,14 @@ python -m src.explore_week1            # week-1 data checks -> results/week1/
 ```
 scripts/   download_nhanes.sh  toolchain_check.py
 src/       config.py  harmonise.py  cohort.py  scores.py  explore_week1.py
+           models.py  fit.py  evaluate.py  ladder.py  test_once.py  export_web.py
+models/    frozen models and frozen.json (settings, thresholds, hashes)
 tests/     test_scores.py (python -m tests.test_scores)
-docs/      decisions.md (dated log of every design decision)
-results/   week1/ tables and figures
+docs/      the website (GitHub Pages) and decisions.md, a dated log of every design decision
+results/   week1/, validation/ and test/ tables and figures
 data/      raw/ codebooks/ processed/   (not in git; rebuilt by the steps above)
 ```
 
 The 2017-March 2020 HbA1c values live only in
 `data/processed/test_labels.sealed.parquet` and are read once, after the models
-are frozen (see `PREREG.md`, written in week 1).
+are frozen (see `PREREG.md` and `FROZEN.md`).
