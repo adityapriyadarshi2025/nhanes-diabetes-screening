@@ -161,6 +161,9 @@ select, input[type="number"] {
 code, pre { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 0.88em; }
 pre { background: var(--card); border: 1px solid var(--rule); padding: 1rem; overflow-x: auto; max-width: var(--measure); }
 
+.refs { font-size: 0.92rem; color: var(--ink-2); padding-left: 1.1rem; }
+.refs li { margin-bottom: 0.45rem; }
+
 footer { border-top: 1px solid var(--rule); color: var(--ink-3); font-size: 0.9rem; }
 footer div { max-width: var(--wide); margin: 0 auto; padding: 1.5rem 1rem 3rem; }
 
