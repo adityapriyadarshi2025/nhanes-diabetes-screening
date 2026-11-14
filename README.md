@@ -11,6 +11,34 @@ USPSTF 2021 rule, the ADA 2026 rule, or a model trained on 2007-2014 NHANES data
 2007-2008 to 2017-March 2020, public domain. Train on 2007-2014, calibrate on
 2015-2016, test once on 2017-March 2020.
 
+**Website.** https://adityapriyadarshi2025.github.io/nhanes-diabetes-screening/
+(served by GitHub Pages from `docs/`).
+
+## Result
+
+The one-time test on 2017-March 2020 ran on 14 Nov 2026, after the models were
+frozen (`FROZEN.md`, commit `b88cb3b`).
+
+- **H1, the pre-registered confirmatory test, is not supported.** At the ADA
+  risk test's number of tests, the LightGBM classifier found 70.5% of adults
+  with HbA1c 5.7% or more, against 69.2% for the ADA test: +1.3 points (95%
+  interval -1.4 to +3.8). The EBM agrees (+1.4, -0.9 to +3.9).
+- Each test found slightly more cases: 45.8% of the adults LightGBM sent for a
+  test had HbA1c 5.7% or more, against 43.4% (+2.4 points, +0.3 to +4.5).
+- At the USPSTF 2021 rule's number of tests, the models found about 14 points
+  more cases (LightGBM +13.9, +10.0 to +17.9), and the ADA risk test alone also
+  beats the USPSTF rule. The ADA 2026 rule finds 98% of cases by testing 86% of
+  adults.
+- H2: predicting the HbA1c value made no detectable difference for 6.5%+.
+  H3: the only step that clearly helped was giving a linear model all inputs
+  instead of the seven ADA items (+3.0, +0.7 to +5.3). H4: before
+  recalibration every model over-predicted in every later survey; after it,
+  5.7%+ is well calibrated on the test (observed/expected 0.97) and 6.5%+ is
+  under-predicted (1.15, 0.96 to 1.36). H5: among Asian adults, the ADA test,
+  the USPSTF rule and the models each found about half of the cases.
+
+Tables: `results/test/`. Charts and the full write-up: the website.
+
 ## How to run
 
 ```

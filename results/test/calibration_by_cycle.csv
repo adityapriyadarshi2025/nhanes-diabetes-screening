@@ -1,0 +1,61 @@
+cycle,model,target,kind,obs_exp,cal_slope
+2011-2012,ada_refit,y57,"uncalibrated, out of time",0.89,0.8674
+2011-2012,ada_refit,y65,"uncalibrated, out of time",0.7252,0.8579
+2011-2012,ebm,y57,"uncalibrated, out of time",0.9353,0.9294
+2011-2012,ebm,y65,"uncalibrated, out of time",0.7786,0.9413
+2011-2012,ebm_pairs,y57,"uncalibrated, out of time",0.9352,0.8882
+2011-2012,ebm_pairs,y65,"uncalibrated, out of time",0.7935,0.8689
+2011-2012,l1,y57,"uncalibrated, out of time",0.9505,0.9527
+2011-2012,l1,y65,"uncalibrated, out of time",0.7261,1.0546
+2011-2012,lgb,y57,"uncalibrated, out of time",0.9128,0.9446
+2011-2012,lgb,y65,"uncalibrated, out of time",0.7307,1.0042
+2011-2012,lgb_value,y57,"uncalibrated, out of time",0.9322,0.8163
+2011-2012,lgb_value,y65,"uncalibrated, out of time",0.7357,0.8446
+2013-2014,ada_refit,y57,"uncalibrated, out of time",0.7537,1.0715
+2013-2014,ada_refit,y65,"uncalibrated, out of time",0.569,1.075
+2013-2014,ebm,y57,"uncalibrated, out of time",0.8012,1.1587
+2013-2014,ebm,y65,"uncalibrated, out of time",0.6301,1.2327
+2013-2014,ebm_pairs,y57,"uncalibrated, out of time",0.8004,1.0956
+2013-2014,ebm_pairs,y65,"uncalibrated, out of time",0.6428,1.1371
+2013-2014,l1,y57,"uncalibrated, out of time",0.8077,1.1679
+2013-2014,l1,y65,"uncalibrated, out of time",0.615,1.2743
+2013-2014,lgb,y57,"uncalibrated, out of time",0.7963,1.106
+2013-2014,lgb,y65,"uncalibrated, out of time",0.652,1.0898
+2013-2014,lgb_value,y57,"uncalibrated, out of time",0.7835,1.0746
+2013-2014,lgb_value,y65,"uncalibrated, out of time",0.6066,1.083
+2015-2016,ada_refit,y57,"uncalibrated, out of time",0.8629,1.0085
+2015-2016,ada_refit,y65,"uncalibrated, out of time",0.5986,0.9029
+2015-2016,ebm,y57,"uncalibrated, out of time",0.8967,1.075
+2015-2016,ebm,y65,"uncalibrated, out of time",0.6572,0.9582
+2015-2016,ebm_pairs,y57,"uncalibrated, out of time",0.8971,1.0534
+2015-2016,ebm_pairs,y65,"uncalibrated, out of time",0.6617,0.8844
+2015-2016,l1,y57,"uncalibrated, out of time",0.903,1.0316
+2015-2016,l1,y65,"uncalibrated, out of time",0.6395,0.9358
+2015-2016,lgb,y57,"uncalibrated, out of time",0.8927,1.056
+2015-2016,lgb,y65,"uncalibrated, out of time",0.6467,0.9197
+2015-2016,lgb_value,y57,"uncalibrated, out of time",0.8759,1.0469
+2015-2016,lgb_value,y65,"uncalibrated, out of time",0.6208,0.8053
+2017-2020,lgb_value,y57,"uncalibrated, out of time",0.8603,1.0298
+2017-2020,lgb_value,y57,calibrated on 2015-2016,0.9799,0.9837
+2017-2020,lgb_value,y65,"uncalibrated, out of time",0.7496,0.8648
+2017-2020,lgb_value,y65,calibrated on 2015-2016,1.2045,1.0739
+2017-2020,ada_refit,y57,"uncalibrated, out of time",0.8452,0.9933
+2017-2020,ada_refit,y57,calibrated on 2015-2016,0.9773,0.9849
+2017-2020,l1,y57,"uncalibrated, out of time",0.8733,1.012
+2017-2020,l1,y57,calibrated on 2015-2016,0.9639,0.9811
+2017-2020,ebm,y57,"uncalibrated, out of time",0.8761,1.0346
+2017-2020,ebm,y57,calibrated on 2015-2016,0.9735,0.9624
+2017-2020,ebm_pairs,y57,"uncalibrated, out of time",0.875,1.0094
+2017-2020,ebm_pairs,y57,calibrated on 2015-2016,0.9722,0.9583
+2017-2020,lgb,y57,"uncalibrated, out of time",0.8709,1.0199
+2017-2020,lgb,y57,calibrated on 2015-2016,0.9725,0.9658
+2017-2020,ada_refit,y65,"uncalibrated, out of time",0.6859,0.8785
+2017-2020,ada_refit,y65,calibrated on 2015-2016,1.1495,0.9729
+2017-2020,l1,y65,"uncalibrated, out of time",0.7521,0.958
+2017-2020,l1,y65,calibrated on 2015-2016,1.1764,1.0238
+2017-2020,ebm,y65,"uncalibrated, out of time",0.7796,0.9104
+2017-2020,ebm,y65,calibrated on 2015-2016,1.1863,0.9501
+2017-2020,ebm_pairs,y65,"uncalibrated, out of time",0.7805,0.8709
+2017-2020,ebm_pairs,y65,calibrated on 2015-2016,1.1812,0.9847
+2017-2020,lgb,y65,"uncalibrated, out of time",0.7443,0.9291
+2017-2020,lgb,y65,calibrated on 2015-2016,1.1543,1.0102

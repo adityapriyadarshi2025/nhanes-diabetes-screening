@@ -2,6 +2,41 @@
 
 Newest first. Each entry: what was decided and why.
 
+## 14 Nov 2026 (week 4, one-time test)
+
+- **Test run once** with `python -m src.test_once` at 03:19 IST, three minutes
+  after the freeze commit `b88cb3b` (03:16 IST). Before reading the labels the
+  script checked all 13 model files against `models/frozen.json` and the sealed
+  labels against the hash in `PREREG.md`. It writes
+  `results/test/UNSEALED.txt` and refuses to run a second time.
+- **Time stamps.** `models/frozen.json` and `UNSEALED.txt` label their times
+  "Asia": the container's time zone was set to Asia/Calcutta without zone
+  data, so its clock ran on UTC. Both times are UTC (frozen 21:27 and unsealed
+  21:49 on 13 Nov, which is 02:57 and 03:19 IST on 14 Nov).
+- **H1 not supported.** LightGBM 70.5% against 69.2% for the ADA test at the
+  ADA test's number of tests: +1.3 points (-1.4 to +3.8). EBM +1.4 (-0.9 to
+  +3.9); without "borderline" answers +1.4 (-1.4 to +4.0).
+- **Independent recheck** before anything was written up: ADA flags rescored
+  from the raw inputs (identical for all 6,644 adults); LightGBM
+  probabilities, sensitivity and PPV recomputed without `src/evaluate.py`; a
+  separate Rao-Wu bootstrap (seed 7) gave -1.2 to +4.0 for H1.
+- **Secondary results** (intervals in `results/test/`): PPV +2.4 points (+0.3
+  to +4.5) at the ADA test's number of tests; sensitivity +13.9 (+10.0 to
+  +17.9) at the USPSTF rule's. H2: no difference. H3: only the step from the
+  ADA items to all inputs (+3.0, +0.7 to +5.3). H4: over-prediction before
+  recalibration in every cycle; after it, 6.5%+ is under-predicted (1.15, 0.96
+  to 1.36) because its share rose from 2.0% to 2.4%. H5: about half of the
+  cases among Asian adults are found by every method except ADA 2026.
+- **Website text** rewritten for this result: three waffle charts (USPSTF,
+  ADA, LightGBM); H3-H5 paragraphs and the conclusion. The yield table no
+  longer marks a "best" method. The main table gained the pre-registered
+  "threshold re-set on 2017-2020" column. The charts have a phone layout.
+  `src/export_web.py` adds the 2007-2014 unweighted and weighted prevalence
+  quoted in the H4 text.
+- **No test analysis was added or changed after the test.** The only new
+  numbers are descriptive: the 2007-2014 prevalence and the frozen LightGBM's
+  split-gain shares quoted under "Who the model misses".
+
 ## 14 Nov 2026 (weeks 2-3, models and freeze)
 
 - **Ladder fitted** with rolling-origin tuning (`src/fit.py`); final models are

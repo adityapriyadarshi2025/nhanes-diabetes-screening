@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Finding undiagnosed diabetes without a blood test</title>
+<meta name="description" content="ES 335 project: which way of choosing adults for an HbA1c test finds the most undiagnosed prediabetes and diabetes per test, on a later NHANES survey.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/style.css">
+<script src="assets/plotly.min.js" defer></script>
+<script src="assets/app.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <nav aria-label="Sections">
+    <a href="#question">Question</a>
+    <a href="#data">Data</a>
+    <a href="#prep">Preprocessing</a>
+    <a href="#methods">Methods</a>
+    <a href="#evaluation">Evaluation</a>
+    <a href="#results">Results</a>
+    <a href="#calculator">Try it</a>
+    <a href="#errors">Errors</a>
+    <a href="#limitations">Limitations</a>
+    <a href="#conclusion">Conclusion</a>
+    <a href="#reproduce">Reproduce</a>
+    <a href="#changes">Changes</a>
+  </nav>
+</header>
+
+<main>
+<section class="hero">
+  <h1>Finding undiagnosed diabetes without a blood test</h1>
+  <p class="byline">ES 335 Machine Learning, IIT Gandhinagar, 2026. Aditya Priyadarshi.
+    <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening">Code and data pipeline on GitHub</a>.</p>
+  <p class="lead" id="hero-lead">About one in four US adults who have never been told they have diabetes already has an HbA1c of 5.7% or more. A short questionnaire decides who gets the blood test. This project asks whether a model trained on earlier surveys picks those people better than the questionnaire and today's screening rules do.</p>
+
+  <div class="scale" aria-hidden="true">
+    <div class="bar"></div>
+    <div class="ticks"><span>HbA1c under 5.7%: normal</span><span>5.7 to 6.4%: prediabetes</span><span>6.5%+: diabetes</span></div>
+  </div>
+
+  <div class="waffles" id="waffles" aria-live="polite"></div>
+  <div class="legend" id="waffle-legend" hidden>
+    <span><i style="background:var(--amber)"></i>Case found by the test</span>
+    <span><i style="border:2px solid var(--amber);background:#fff"></i>Case missed</span>
+    <span><i style="background:var(--slate-soft)"></i>Tested, HbA1c under 5.7%</span>
+    <span><i style="border:1.5px solid var(--rule);background:#fff"></i>Not tested</span>
+  </div>
+</section>
+
+<section id="question">
+  <h2>The question</h2>
+  <p>Using only what an adult can answer and a nurse can measure with a scale and a tape, which way of choosing people for an HbA1c test finds the most undiagnosed dysglycaemia per test on a later survey: the ADA risk test, the USPSTF 2021 rule, the ADA 2026 rule, or a model trained on 2007-2014?</p>
+  <p>Prediabetes and early type 2 diabetes cause no symptoms, so they are found only when someone orders a blood test. Every screening rule is therefore a decision about who gets tested. A useful answer says how many more cases a method finds for the same number of tests, with an honest interval, on people it has never seen.</p>
+  <p>The plan, hypotheses and every analysis choice were fixed in <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/PREREG.md">a pre-registration</a> before any model was trained, and the models were frozen in <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/FROZEN.md">FROZEN.md</a> before the test survey's HbA1c values were read.</p>
+</section>
+
+<section id="data">
+  <h2>Data</h2>
+  <p>The National Health and Nutrition Examination Survey (NHANES, CDC) interviews and examines a nationally representative sample of US residents every two years and measures HbA1c in a laboratory. Six cycles are used, from 2007-2008 to the 2017-March 2020 pre-pandemic file, downloaded straight from the CDC with a checksum for every file.</p>
+  <p>One row is one adult aged 20 or over who was examined, is not pregnant, has an HbA1c result, has never been told they have diabetes and takes no diabetes medicine.</p>
+  <div class="table-wrap" id="flow-table"></div>
+  <p class="note">The 2017-March 2020 HbA1c values were written to a separate file at build time and checked against a hash recorded in the pre-registration. No code read them until the models were frozen.</p>
+</section>
+
+<section id="prep">
+  <h2>Preprocessing</h2>
+  <ul>
+    <li>Twelve NHANES files per cycle are merged on the participant id. Answers coded refused or don't know become missing, never "no".</li>
+    <li>Questions asked only of some people are filled from the skip pattern: men and women never pregnant have no gestational diabetes; people never told of high blood pressure take no blood-pressure medicine.</li>
+    <li>Variable names that changed between cycles (for example the diabetes-pills question in 2007-2008) were checked against the codebooks.</li>
+    <li>Inputs: age, sex, BMI, waist, waist-to-height ratio, height, weight, arm circumference, upper-leg length, told high blood pressure, blood-pressure medicine, family history, heart disease or stroke, gestational diabetes, smoking, leisure-time activity, weekly activity minutes, sitting time, education and income-to-poverty ratio.</li>
+    <li>Never used as inputs: any blood value, measured blood pressure (the device changed in 2017), "told you have prediabetes", "blood test in the past three years", race and ethnicity, survey weights and the survey year.</li>
+    <li>Missing values are rare (0-5% for body and history items, 8-14% for income). Trees use native missing-value handling; logistic models use median imputation with missing flags.</li>
+  </ul>
+  <p>HbA1c itself moves between survey cycles: the share at 5.7% or more ranges from 23.6% to 28.6% after age standardisation, without a clean step at the 2013 lab change. That is why every model is recalibrated on 2015-2016, which used the same laboratory and analyser as the test survey.</p>
+</section>
+
+<section id="methods">
+  <h2>Baselines and methods</h2>
+  <p>Each rung adds one thing, so the gap between neighbours shows where a gain comes from.</p>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Rung</th><th>Method</th><th>What it adds</th></tr></thead>
+      <tbody>
+        <tr><td>0</td><td>USPSTF 2021 rule: age 35-70 and BMI 25+</td><td>The US national screening rule</td></tr>
+        <tr><td>0</td><td>ADA 2026 rule: everyone 35+, or overweight with a risk factor</td><td>Broad screening</td></tr>
+        <tr><td>1</td><td>ADA risk test, 5 or more of 11 points</td><td>The standard questionnaire (Bang et al. 2009)</td></tr>
+        <tr><td>2</td><td>Logistic regression on the ADA test's own items</td><td>New weights, same questions</td></tr>
+        <tr><td>3</td><td>L1 logistic regression on all inputs</td><td>More inputs, still linear</td></tr>
+        <tr><td>4</td><td>Explainable boosting machine (EBM)</td><td>A learned curve for each input</td></tr>
+        <tr><td>5</td><td>EBM with up to 10 pairwise interactions</td><td>Interactions you can still plot</td></tr>
+        <tr><td>6</td><td>LightGBM classifier, risk rising with age, BMI and waist</td><td>Any interaction</td></tr>
+        <tr><td>7</td><td>LightGBM HbA1c value model</td><td>Predicts the HbA1c level and its spread, then reads off the chance of crossing 5.7% or 6.5%</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p class="note">LightGBM and L1 settings were chosen by rolling-origin tuning; the EBM settings were fixed in advance. Every model is recalibrated on 2015-2016 with Platt scaling.</p>
+</section>
+
+<section id="evaluation">
+  <h2>How it was evaluated</h2>
+  <svg class="diagram" viewBox="0 0 760 250" role="img" aria-label="Survey cycles and their roles: three forward tuning checks, calibration on 2015-2016, one test on 2017-2020">
+    <g font-family="Public Sans, sans-serif" font-size="13" fill="#17243b">
+      <text x="150" y="28" fill="#4a5568">2007-08</text><text x="232" y="28" fill="#4a5568">2009-10</text><text x="314" y="28" fill="#4a5568">2011-12</text><text x="396" y="28" fill="#4a5568">2013-14</text><text x="478" y="28" fill="#4a5568">2015-16</text><text x="560" y="28" font-weight="700">2017-20</text>
+      <text x="16" y="62">Tuning check 1</text><rect x="140" y="44" width="156" height="28" rx="6" fill="#e3e7ee"/><rect x="304" y="44" width="74" height="28" rx="6" fill="#d4ecea"/><text x="196" y="63">train</text><text x="325" y="63">check</text>
+      <text x="16" y="102">Tuning check 2</text><rect x="140" y="84" width="238" height="28" rx="6" fill="#e3e7ee"/><rect x="386" y="84" width="74" height="28" rx="6" fill="#d4ecea"/><text x="240" y="103">train</text><text x="407" y="103">check</text>
+      <text x="16" y="142">Tuning check 3</text><rect x="140" y="124" width="320" height="28" rx="6" fill="#e3e7ee"/><rect x="468" y="124" width="74" height="28" rx="6" fill="#d4ecea"/><text x="282" y="143">train</text><text x="489" y="143">check</text>
+      <text x="16" y="192" font-weight="700">Final models</text><rect x="140" y="174" width="320" height="28" rx="6" fill="#e3e7ee"/><rect x="468" y="174" width="74" height="28" rx="6" fill="#f6e7c4"/><rect x="550" y="174" width="74" height="28" rx="6" fill="#0e7470"/><text x="245" y="193">train on 2007-2014</text><text x="476" y="193">calibrate</text><text x="561" y="193" fill="#fff" font-weight="700">test once</text>
+      <text x="140" y="232" fill="#7a8494" font-size="12">Minnesota lab to 2012, Missouri lab from 2013 (same lab and analyser in 2015-16 and 2017-20)</text>
+    </g>
+  </svg>
+  <ul>
+    <li><strong>Split by survey cycle.</strong> A screening tool is built once and used on later people, so models train on 2007-2014, are recalibrated and thresholded on 2015-2016, and meet 2017-March 2020 once.</li>
+    <li><strong>Same number of tests.</strong> A programme can test only so many people. Each model's threshold sends the same share of 2015-2016 adults for a test as the ADA risk test, the USPSTF rule or the ADA 2026 rule, and is then applied unchanged to the test survey. The main measure is sensitivity: the share of people with HbA1c at or above the cut-off who are sent for a test.</li>
+    <li><strong>Survey design.</strong> Estimates use the NHANES weights, so they describe US adults. Intervals come from 1,000 Rao-Wu bootstrap replicates that resample survey areas within strata, and both methods in a comparison share each replicate.</li>
+    <li><strong>Leakage ladder.</strong> Published models report AUCs of 0.82-0.89. The ladder below shows what happens on 2007-2016 when the honest setup is loosened one step at a time.</li>
+  </ul>
+  <div class="chart short" id="ladder-chart"></div>
+  <h3>Out-of-time validation before the freeze</h3>
+  <p>Mean over the three forward checks (2011-12, 2013-14, 2015-16), before recalibration.</p>
+  <div class="table-wrap" id="validation-table"></div>
+</section>
+
+<section id="results">
+  <h2>Results on 2017-March 2020</h2>
+  <div class="callout" id="h1-callout"><strong>Waiting for the one-time test.</strong>The models are frozen; results appear here once the test survey has been opened.</div>
+  <p class="note">The models were frozen at 02:57 IST on 14 Nov 2026 and committed at 03:16 (<a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/commit/b88cb3b9001334c9e9c404c9b4e5e286815d4b4b">commit b88cb3b</a>). The test survey's HbA1c values were opened once, at 03:19, after a script checked every model file and the sealed labels against their recorded hashes.</p>
+  <div id="results-body" hidden>
+    <h3>Cases found at each screening rule's number of tests</h3>
+    <p>In each panel, every model's threshold was set on 2015-2016 to test as many adults as one existing rule, then applied unchanged. On 2017-2020 the shares tested differ from the rule's by a point or two (see the full table below). Dots are survey-weighted sensitivity for HbA1c 5.7% or more; lines are 95% intervals.</p>
+    <div class="chart" id="ops-chart"></div>
+
+    <h3>Choose how many adults to test</h3>
+    <p>Here each method's threshold is set on 2017-2020 itself, so every method tests the chosen share, or as close to it as a points score allows. Diamonds mark the three existing rules.</p>
+    <div class="controls">
+      <label for="rate">Share of adults sent for an HbA1c test: <output id="rate-out">43%</output></label>
+      <input type="range" id="rate" min="1" max="90" value="43">
+      <label for="target">Cut-off</label>
+      <select id="target"><option value="y57">HbA1c 5.7% or more</option><option value="y65">HbA1c 6.5% or more</option></select>
+    </div>
+    <div class="chart" id="yield-chart"></div>
+    <div class="table-wrap" id="yield-table"></div>
+
+    <h3>All operating points</h3>
+    <div class="table-wrap" id="main-table"></div>
+
+    <h3>Ranking and calibration</h3>
+    <div class="table-wrap" id="disc-table"></div>
+
+    <h3>Where the gain comes from (H3)</h3>
+    <p>Each step adds one thing to the step before; the gain is the change in sensitivity for HbA1c 5.7% or more at the ADA test's number of tests.</p>
+    <div class="table-wrap" id="h3-table"></div>
+    <p id="h3-text"></p>
+
+    <h3>Predicting the HbA1c value instead of a yes or no (H2)</h3>
+    <p id="h2-text"></p>
+
+    <h3>Survey years (H4)</h3>
+    <p>Left: share of adults without a diagnosis whose HbA1c is 5.7% or more, by survey. Right: observed over expected cases for the chosen model, out of time and before recalibration, and after recalibration on 2015-2016.</p>
+    <div class="controls"><label for="cycle-model">Model</label>
+      <select id="cycle-model"><option value="lgb">LightGBM classifier</option><option value="ebm">EBM</option><option value="l1">L1 logistic</option><option value="lgb_value">LightGBM value model</option></select></div>
+    <div class="waffles"><div class="chart short" id="hba1c-cycle-chart"></div><div class="chart short" id="oe-cycle-chart"></div></div>
+    <p id="h4-text"></p>
+
+    <h3>Groups of adults (H5)</h3>
+    <div class="controls"><label for="dim">Group by</label>
+      <select id="dim"><option value="race">Race and ethnicity</option><option value="age_band">Age</option><option value="sex">Sex</option><option value="bmi_band">BMI</option></select></div>
+    <div class="chart" id="subgroup-chart"></div>
+    <p id="h5-text"></p>
+  </div>
+</section>
+
+<section id="calculator">
+  <h2>Try it</h2>
+  <p>This runs the frozen EBM in your browser, scores the ADA risk test and checks both screening rules. Nothing you type leaves this page. It is a research demonstration, not medical advice: only a blood test can tell you your HbA1c.</p>
+  <div class="calc">
+    <form id="calc-form" autocomplete="off">
+      <div class="row"><span>Age (years)</span><input type="number" name="age" min="20" max="80" value="45" required></div>
+      <div class="row"><span>Sex</span><select name="male"><option value="1">Man</option><option value="0">Woman</option></select></div>
+      <div class="row"><span>Height (cm)</span><input type="number" name="height" min="120" max="220" value="170" required></div>
+      <div class="row"><span>Weight (kg)</span><input type="number" name="weight" min="30" max="250" value="75" required></div>
+      <div class="row"><span>Waist (cm) <span class="optional">optional</span></span><input type="number" name="waist" min="50" max="180"></div>
+      <div class="row"><span>Ever told you have high blood pressure</span><select name="htn_told"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div class="row"><span>Taking blood-pressure medicine</span><select name="bp_med"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div class="row"><span>Parent, brother or sister with diabetes</span><select name="famhx"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div class="row"><span>Ever had heart disease or a stroke</span><select name="cvd"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div class="row"><span>Diabetes during a pregnancy</span><select name="gdm"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div class="row"><span>Education <span class="optional">optional</span></span><select name="educ"><option value="">Prefer not to say</option><option value="1">Less than 9th grade</option><option value="2">9th to 11th grade</option><option value="3">High school</option><option value="4">Some college</option><option value="5">College graduate</option></select></div>
+      <div class="row"><span>Smoking</span><select name="smoking"><option value="0">Never</option><option value="1">Former</option><option value="2">Current</option></select></div>
+      <div class="row"><span>Any moderate or vigorous sport or exercise in a usual week</span><select name="active_rec"><option value="1">Yes</option><option value="0">No</option></select></div>
+      <div class="row"><span>Minutes of activity a week <span class="optional">optional</span></span><input type="number" name="mvpa_min_wk" min="0" max="5000"></div>
+      <div class="row"><span>Minutes sitting a day <span class="optional">optional</span></span><input type="number" name="sedentary_min" min="0" max="1440"></div>
+    </form>
+    <output id="calc-out" for="calc-form" aria-live="polite"></output>
+  </div>
+</section>
+
+<section id="errors">
+  <h2>Who the model misses</h2>
+  <p>Among adults with HbA1c of 5.7% or more in the test survey, these are the people the LightGBM classifier sends for a test at the ADA test's number of tests, compared with those it misses (survey-weighted means).</p>
+  <div class="table-wrap" id="missed-table"></div>
+  <p id="missed-text"></p>
+</section>
+
+<section id="limitations">
+  <h2>Limitations</h2>
+  <ul>
+    <li>One HbA1c measurement is not a diagnosis; a clinic would repeat the test. Fasting glucose was not used to define cases.</li>
+    <li>NHANES represents the United States. The cut-offs, body shapes and risk factors may not transfer to India without new data.</li>
+    <li>The test survey has 2,345 adults with HbA1c of 5.7% or more and 237 with 6.5% or more. The primary comparison rules out a gain above about 4 points but cannot tell a smaller one from zero, and the 6.5% comparisons are imprecise.</li>
+    <li>The ADA test is designed to be filled in at home with self-reported weight; here it is scored from measured weight, which flatters it slightly. With self-reported height and weight it tested 41% of adults and found 66% of cases, against 43% and 69%.</li>
+    <li>"Non-Hispanic Asian" in NHANES groups many origins, and its sample is small, so the Asian-adult intervals are wide.</li>
+    <li>Models were trained without survey weights and recalibrated with them; several pre-registered secondary analyses were cut for time and are listed in FROZEN.md.</li>
+    <li>HbA1c levels shift between survey cycles for laboratory and population reasons that this project cannot separate.</li>
+  </ul>
+</section>
+
+<section id="conclusion">
+  <h2>Conclusion</h2>
+  <div class="prose" id="conclusion-text"><p>The conclusion is written from the test results.</p></div>
+</section>
+
+<section id="reproduce">
+  <h2>Reproduce</h2>
+  <pre><code>git clone https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening
+cd nhanes-diabetes-screening
+pip install -r requirements.txt
+bash scripts/download_nhanes.sh
+python -m src.harmonise &amp;&amp; python -m src.cohort
+python -m src.fit &amp;&amp; python -m src.ladder
+python -m src.test_once
+python -m src.export_web</code></pre>
+  <p class="note">The download script checks every file against the committed SHA-256 manifest; <code>src/harmonise.py</code> reproduces the sealed-label hash recorded in the pre-registration.</p>
+  <p>Records: <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/PREREG.md">pre-registration</a>,
+    <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/FROZEN.md">freeze record</a>,
+    <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/docs/decisions.md">decisions log</a> and
+    <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/tree/main/results">all result tables</a>.</p>
+</section>
+
+<section id="changes">
+  <h2>Changes since the proposal</h2>
+  <ul>
+    <li>Tuning uses three forward checks (rolling origin) instead of 2015-2016 alone; 2015-2016 still sets calibration and thresholds.</li>
+    <li>The USPSTF 2021 and ADA 2026 rules and a refitted ADA score were added as baselines.</li>
+    <li>An explainable boosting machine was added, and it runs the calculator instead of SHAP values.</li>
+    <li>Race and ethnicity were taken out of the models, because HbA1c reads higher in Black adults at the same blood glucose.</li>
+    <li>People taking insulin or diabetes pills were excluded even if never told they have diabetes.</li>
+    <li>Platt scaling replaced isotonic regression as the main calibration.</li>
+    <li>A leakage ladder and survey-year and subgroup analyses were added.</li>
+  </ul>
+</section>
+</main>
+
+<footer><div>Data: National Health and Nutrition Examination Survey, CDC National Center for Health Statistics (public domain). Screening rules: USPSTF 2021; ADA Standards of Care 2026. Research demonstration, not medical advice.</div></footer>
+</body>
+</html>
