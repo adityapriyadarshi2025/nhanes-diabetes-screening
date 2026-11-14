@@ -1,6 +1,7 @@
 import json
 import pickle
 
+import lightgbm as lgb
 import numpy as np
 import pandas as pd
 
@@ -45,6 +46,12 @@ def train_prevalence(dev):
                 "weighted": float(np.average(tr["hba1c"] >= c, weights=tr["wt_mec"]))} for t, c in CUTS.items()}
 
 
+def lgb_gain():
+    b = lgb.Booster(model_file=str(MODELS / "lgb_y57.txt"))
+    gain = b.feature_importance("gain")
+    return dict(sorted(((n, float(g / gain.sum())) for n, g in zip(b.feature_name(), gain)), key=lambda t: -t[1]))
+
+
 def records(path):
     return json.loads(pd.read_csv(path).to_json(orient="records")) if path.exists() else None
 
@@ -82,6 +89,9 @@ def main():
         "missed_profile": records(test / "missed_profile.csv"),
         "hypotheses": json.loads((test / "hypotheses.json").read_text()) if (test / "hypotheses.json").exists() else None,
         "unsealed": (test / "UNSEALED.txt").read_text().strip() if (test / "UNSEALED.txt").exists() else None,
+        "lgb_gain": lgb_gain(),
+        "review": {name: records(RESULTS / "review" / f"{name}.csv") for name in
+                   ("matched_volume", "subgroup_differences", "leakage_ladder_summary", "weighted_training", "grid_edge")},
     }
     (SITE / "results.json").write_text(json.dumps(data))
     if (test / "yield_curves.json").exists():

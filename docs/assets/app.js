@@ -71,24 +71,55 @@ function renderValidation(rows) {
     (i) => (i === 0 ? "rule" : ""));
 }
 
-function renderLadder(rows) {
+function renderLadder(R) {
+  const S = R.review && R.review.leakage_ladder_summary;
+  const rows = S || R.leakage_ladder;
   const short = ["Honest: later survey, undiagnosed adults", "Random split instead of a later survey", "+ diagnosed adults counted as cases",
     "+ two questions that reveal past testing", "+ one blood value (HDL)"];
   const narrow = NARROW.matches;
-  const y = rows.map((r, i) => (narrow ? wrap(short[i] || r.step, 22) : short[i] || r.step)).reverse();
-  const x = rows.map((r) => r.auc).reverse();
+  const ord = rows.map((r, i) => ({ ...r, label: short[i] || r.step })).reverse();
+  const y = ord.map((r) => (narrow ? wrap(r.label, 22) : r.label));
+  const x = ord.map((r) => (S ? r.mean : r.auc));
+  const end = ord.map((r) => (S ? r.max : r.auc));
   Plotly.newPlot("ladder-chart", [{
     type: "bar", orientation: "h", x, y, marker: { color: x.map((_, i) => (i === x.length - 1 ? "#0e7470" : "#a7b1c2")) },
-    text: x.map((v) => v.toFixed(3)), textposition: "outside", cliponaxis: false,
-    hovertemplate: "%{y}<br>AUC %{x:.3f}<extra></extra>",
+    error_x: S ? { type: "data", symmetric: false, array: ord.map((r) => r.max - r.mean), arrayminus: ord.map((r) => r.mean - r.min), color: "#17243b", thickness: 1.2, width: 4 } : undefined,
+    customdata: S ? ord.map((r) => [r.min, r.max]) : undefined,
+    hovertemplate: S ? "%{y}<br>mean AUC %{x:.3f}, seeds %{customdata[0]:.3f} to %{customdata[1]:.3f}<extra></extra>" : "%{y}<br>AUC %{x:.3f}<extra></extra>",
   }], layout({
-    margin: { l: narrow ? 160 : 290, r: 50, t: 10, b: 40 }, height: narrow ? 340 : undefined,
+    annotations: x.map((v, i) => ({ x: end[i], y: y[i], xshift: 6, xanchor: "left", text: v.toFixed(3), showarrow: false, font: { size: 12 } })),
+    margin: { l: narrow ? 160 : 290, r: 30, t: 10, b: 40 }, height: narrow ? 340 : undefined,
     xaxis: { range: [0.7, 0.9], title: narrow ? "AUC, HbA1c 5.7%+" : "AUC for HbA1c 5.7%+ on held-out data", nticks: narrow ? 3 : undefined, gridcolor: "#e6e9ee", zeroline: false },
   }), CONFIG);
+  if (S) {
+    const m = S.map((r) => r.mean);
+    $("ladder-text").textContent = `A random split on its own changes AUC by ${signed(m[1] - m[0], 3)} on average, well inside its seed-to-seed range (${num(S[1].min, 3)} to ${num(S[1].max, 3)}), so it shows nothing either way. `
+      + `The inflation comes from counting already-diagnosed adults as cases (${signed(m[2] - m[1], 3)}) and from two questions that reveal past testing (${signed(m[3] - m[2], 3)}); one blood value adds ${signed(m[4] - m[3], 3)}.`;
+  }
+}
+
+function renderGrid(R) {
+  const G = R.review && R.review.grid_edge;
+  if (!G) return;
+  const cut = { y57: "5.7%+", y65: "6.5%+" };
+  const parts = ["y57", "y65"].map((t) => {
+    const g = G.filter((r) => r.target === t);
+    const fz = g.find((r) => r.frozen_setting);
+    const best = g.reduce((a, b) => (b.mean_log_loss < a.mean_log_loss ? b : a));
+    return best.frozen_setting ? `none beat the chosen setting for ${cut[t]}`
+      : `the best one for ${cut[t]} (${best.num_leaves} leaves, minimum leaf ${best.min_data_in_leaf}, L2 ${best.lambda_l2}) lowers mean validation log-loss by ${num(fz.mean_log_loss - best.mean_log_loss, 5)} (${num(100 * (fz.mean_log_loss - best.mean_log_loss) / fz.mean_log_loss, 2)}%)`;
+  });
+  $("grid-text").textContent = "The chosen LightGBM settings sat on the edge of the pre-registered grid (15 leaves; minimum leaf 50 and L2 penalty 5 for 5.7%+, minimum leaf 200 for 6.5%+). "
+    + `A check added after review tried settings beyond those edges, tuned the same way: ${parts.join("; ")}. The frozen models were kept.`;
 }
 
 function row(R, t, op, m) {
   return R.main_table.find((r) => r.target === t && r.operating_point === op && r.method === m);
+}
+
+function mvRow(R, t, op, m) {
+  const M = R.review && R.review.matched_volume;
+  return M ? M.find((r) => r.target === t && r.operating_point === op && r.method === m) : null;
 }
 
 function renderHero(R, Y) {
@@ -123,6 +154,13 @@ function renderHero(R, Y) {
     + `With its threshold set on 2015-2016 to test as many adults as the ADA risk test, the LightGBM classifier found ${pct(h.sens_model, 1)} of adults with HbA1c of 5.7% or more in 2017-2020, against ${pct(h.sens_ada, 1)} for the ADA test: `
     + `${pts(h.diff)} points (95% interval ${pts(h.lo)} to ${pts(h.hi)}). This was the one confirmatory test fixed in the pre-registration. `
     + `The EBM (${pts(e.diff)} points, ${pts(e.lo)} to ${pts(e.hi)}) and the same test without adults who answered "borderline" (${pts(nb.diff)}, ${pts(nb.lo)} to ${pts(nb.hi)}) agree.`;
+  const mv = mvRow(R, "y57", "ada", "lgb");
+  if (mv) {
+    const fewer = mv.tested_diff_frozen < 0;
+    $("h1-callout").innerHTML += ` On 2017-2020 the frozen threshold also tested ${num(Math.abs(100 * mv.tested_diff_frozen), 1)} points ${fewer ? "fewer" : "more"} adults than the ADA test `
+      + `(${pts(mv.tested_diff_frozen_lo)} to ${pts(mv.tested_diff_frozen_hi)}), so this comparison slightly ${fewer ? "favoured the ADA test" : "favoured the model"}. `
+      + `With the threshold re-set so both test exactly the same share, LightGBM finds ${pts(mv.sens_diff_matched)} points (${pts(mv.sens_diff_matched_lo)} to ${pts(mv.sens_diff_matched_hi)}); see "Same number of tests" below.`;
+  }
 }
 
 function renderOps(R) {
@@ -209,21 +247,79 @@ function renderYield(Y) {
 }
 
 function renderMain(R) {
-  const head = ["Method", "Share tested", "Sensitivity (95% CI)", "PPV", "Tests per case", "Gain vs rule, points (95% CI)", "Sensitivity, threshold re-set on 2017-20"];
+  const head = ["Method", "Share tested", "Sensitivity (95% CI)", "PPV", "Tests per case", "Gain vs rule, points (95% CI)", "Gain at equal testing on 2017-20, points (95% CI)"];
   const p1 = (x) => pct(x, 1);
   const ci = (a, b, f) => ` <span class="ci">(${f(a)} to ${f(b)})</span>`;
   $("main-table").innerHTML = ["y57", "y65"].map((t) => {
     const body = Object.keys(OPS).map((op) => {
       const rows = R.main_table.filter((r) => r.target === t && r.operating_point === op).map((r) => {
         const isRule = r.method.endsWith("_flag");
+        const mv = isRule ? null : mvRow(R, t, op, r.method);
         const cells = [pct(r.flag_rate), `${p1(r.sens)}${ci(r.sens_lo, r.sens_hi, p1)}`, p1(r.ppv), num(r.tests_per_case, 1),
-          isRule ? "–" : `${pts(r.sens_diff)}${ci(r.sens_diff_lo, r.sens_diff_hi, pts)}`, isRule ? "–" : p1(r.sens_matched_on_test)];
+          isRule ? "–" : `${pts(r.sens_diff)}${ci(r.sens_diff_lo, r.sens_diff_hi, pts)}`,
+          isRule ? "–" : mv ? `${pts(mv.sens_diff_matched)}${ci(mv.sens_diff_matched_lo, mv.sens_diff_matched_hi, pts)}` : pts(r.sens_matched_on_test - row(R, t, op, `${op}_flag`).sens)];
         return `<tr><th scope="row">${LABEL[r.method]}</th>${cells.map((c) => `<td class="n">${c}</td>`).join("")}</tr>`;
       }).join("");
       return `<tr class="group"><th colspan="${head.length}" scope="colgroup">Number of tests set by the ${LABEL[`${op}_flag`]}</th></tr>${rows}`;
     }).join("");
     return `<table><caption>HbA1c ${t === "y57" ? "5.7" : "6.5"}% or more</caption><thead><tr>${head.map((h) => `<th scope="col">${h}</th>`).join("")}</tr></thead><tbody>${body}</tbody></table>`;
   }).join("");
+}
+
+function renderMatched(R) {
+  if (!mvRow(R, "y57", "ada", "lgb")) return;
+  const ci = (r, k) => `${pts(r[k])} <span class="ci">(${pts(r[`${k}_lo`])} to ${pts(r[`${k}_hi`])})</span>`;
+  const rs = MODELS.map((m) => mvRow(R, "y57", "ada", m));
+  table($("matched-table"), ["Method", "Share tested vs ADA test, frozen threshold", "Cases found at equal testing", "Gain, points (95% CI)", "PPV gain, points (95% CI)", "Gain for HbA1c 6.5%+, points (95% CI)"],
+    MODELS.map((m, i) => [LABEL[m], ci(rs[i], "tested_diff_frozen"), pct(rs[i].sens_matched, 1), ci(rs[i], "sens_diff_matched"), ci(rs[i], "ppv_diff_matched"),
+      ci(mvRow(R, "y65", "ada", m), "sens_diff_matched")]));
+  const tested = rs.map((r) => -r.tested_diff_frozen);
+  const gains = rs.map((r) => r.sens_diff_matched);
+  const ppvs = rs.map((r) => r.ppv_diff_matched);
+  const NAME = { ada_refit: "the refitted ADA items", l1: "the L1 logistic regression", ebm: "the EBM", ebm_pairs: "the EBM with pairs", lgb: "the LightGBM classifier", lgb_value: "the LightGBM value model" };
+  const list = (xs, last) => (xs.length > 1 ? `${xs.slice(0, -1).join(", ")} ${last} ${xs[xs.length - 1]}` : xs.join(""));
+  const clear = (r) => Number((100 * r.sens_diff_matched_lo).toFixed(1)) > 0;
+  const above = MODELS.filter((m, i) => clear(rs[i])).map((m) => NAME[m]);
+  const below = MODELS.filter((m, i) => !clear(rs[i])).map((m) => NAME[m]);
+  const lgbr = mvRow(R, "y57", "ada", "lgb");
+  const us = MODELS.map((m) => mvRow(R, "y57", "uspstf", m).sens_diff_matched);
+  $("matched-text").textContent = `With their 2015-2016 thresholds, the models tested between ${num(100 * Math.min(...tested), 1)} and ${num(100 * Math.max(...tested), 1)} points fewer adults than the ADA test on 2017-2020, so the pre-registered comparison was tilted slightly against them. `
+    + `At exactly equal testing they find ${pts(Math.min(...gains))} to ${pts(Math.max(...gains))} points more cases. The 95% intervals sit clearly above zero for ${list(above, "and")}, but not for ${list(below, "or")} (LightGBM ${pts(lgbr.sens_diff_matched)}, ${pts(lgbr.sens_diff_matched_lo)} to ${pts(lgbr.sens_diff_matched_hi)}). `
+    + `The PPV gains shrink to ${pts(Math.min(...ppvs))} to ${pts(Math.max(...ppvs))} points: most of the higher PPV seen with the frozen thresholds came from testing fewer people, not from choosing better. `
+    + `At the USPSTF rule's share the gains stay between ${pts(Math.min(...us))} and ${pts(Math.max(...us))} points. `
+    + "This comparison was pre-registered without intervals; the intervals were added after the test, following an external review, and six models are compared without adjustment. Read it as suggestive: the models probably find about 3 points more cases than the ADA test at the same number of tests, which the confirmatory test could not show.";
+}
+
+function renderWorse(R) {
+  const S = R.review && R.review.subgroup_differences;
+  const ada65 = row(R, "y65", "ada", "ada_flag");
+  const m65 = MODELS.map((m) => row(R, "y65", "ada", m));
+  const lower = m65.filter((r) => r.sens < ada65.sens).length;
+  const lgb65 = row(R, "y65", "ada", "lgb");
+  const refit = row(R, "y65", "ada", "ada_refit");
+  const refitM = mvRow(R, "y65", "ada", "ada_refit");
+  const eq = MODELS.map((m) => mvRow(R, "y65", "ada", m)).filter(Boolean);
+  let text = `Not every comparison favours the models. For HbA1c of 6.5% or more at the ADA test's number of tests, the ADA test found ${pct(ada65.sens, 1)} of cases and ${lower === MODELS.length ? "every model" : `${lower} of ${MODELS.length} models`} found fewer `
+    + `(LightGBM ${pct(lgb65.sens, 1)}, ${pts(lgb65.sens_diff)} points, ${pts(lgb65.sens_diff_lo)} to ${pts(lgb65.sens_diff_hi)}). `;
+  if (eq.length) {
+    const g = eq.map((r) => r.sens_diff_matched);
+    text += `At equal testing the differences run from ${pts(Math.min(...g))} to ${pts(Math.max(...g))} points, all with intervals that include zero. `;
+  }
+  text += `The refitted ADA items did clearly worse than the ADA points at their frozen threshold (${pts(refit.sens_diff)}, ${pts(refit.sens_diff_lo)} to ${pts(refit.sens_diff_hi)})`
+    + (refitM ? ` and still trailed at equal testing (${pts(refitM.sens_diff_matched)}, ${pts(refitM.sens_diff_matched_lo)} to ${pts(refitM.sens_diff_matched_hi)})` : "")
+    + ": new weights for the same seven answers did not carry over to diabetes-range HbA1c in a later survey.";
+  if (S) {
+    const d = (g, m) => S.find((r) => r.dimension === "race" && r.group === g && r.method === m);
+    const f = (r) => `${pts(r.sens_diff)} points, ${pts(r.sens_diff_lo)} to ${pts(r.sens_diff_hi)}`;
+    text += ` By group (HbA1c 5.7%+, frozen thresholds), LightGBM found fewer cases than the ADA test among Mexican American adults (${f(d("Mexican American", "lgb"))}) `
+      + `and non-Hispanic Black adults (${f(d("Non-Hispanic Black", "lgb"))}), and more among other Hispanic adults (${f(d("Other Hispanic", "lgb"))}). `
+      + "These group comparisons were not pre-registered as tests, and with six groups and two models some intervals will exclude zero by chance.";
+    const groups = ["Mexican American", "Other Hispanic", "Non-Hispanic White", "Non-Hispanic Black", "Non-Hispanic Asian", "Other or multiracial"];
+    const ci = (r) => `${pts(r.sens_diff)} <span class="ci">(${pts(r.sens_diff_lo)} to ${pts(r.sens_diff_hi)})</span>`;
+    table($("worse-table"), ["Group (cases)", "ADA test found", "LightGBM minus ADA test, points", "EBM minus ADA test, points"],
+      groups.map((g) => [`${g} (${d(g, "lgb").cases})`, pct(d(g, "lgb").ada_sens, 1), ci(d(g, "lgb")), ci(d(g, "ebm"))]));
+  }
+  $("worse-text").textContent = text;
 }
 
 function renderDisc(R) {
@@ -284,9 +380,15 @@ function renderCycles(R) {
   const cal = (t) => R.discrimination.find((r) => r.target === t && r.method === "lgb");
   const p65 = (c) => H.find((r) => r.cycle === c).pct_65;
   const tp = R.train_prevalence.y57;
+  const wt = R.review && R.review.weighted_training;
+  const wtx = (t, w) => wt.filter((r) => r.target === t && r.weighted_training === w).map((r) => r.obs_exp);
+  const dauc = wt ? ["y57", "y65"].flatMap((t) => wt.filter((r) => r.target === t && r.weighted_training).map((r) => r.auc - wt.find((u) => u.target === t && u.check === r.check && !u.weighted_training).auc)) : [];
+  const check = wt ? `A check added after review confirms most of this: trained with survey weights, the same LightGBM settings give observed/expected ${lo(wtx("y57", true))} to ${hi(wtx("y57", true))} for 5.7%+ on the three forward checks, `
+    + `against ${lo(wtx("y57", false))} to ${hi(wtx("y57", false))} unweighted, and ${lo(wtx("y65", true))} to ${hi(wtx("y65", true))} for 6.5%+, against ${lo(wtx("y65", false))} to ${hi(wtx("y65", false))}, `
+    + `without better ranking (AUC changed by ${signed(Math.min(...dauc), 3)} to ${signed(Math.max(...dauc), 3)}). The shortfall that remains, largest in 2013-2014, is drift between surveys. ` : "";
   $("h4-text").textContent = `Before recalibration, every model expected more cases than were observed, in every later survey: observed/expected ${lo(oe57)} to ${hi(oe57)} for HbA1c 5.7%+ `
-    + `and ${lo(oe65)} to ${hi(oe65)} for 6.5%+. The likely reason is that the models were trained without survey weights: ${pct(tp.unweighted)} of the 2007-2014 sample has HbA1c 5.7%+, `
-    + `but ${pct(tp.weighted)} once weighted to US adults. Recalibrating on 2015-2016 brought 2017-2020 to ${num(cal("y57").obs_exp, 2)} for LightGBM (95% interval ${num(cal("y57").obs_exp_lo, 2)} to ${num(cal("y57").obs_exp_hi, 2)}). `
+    + `and ${lo(oe65)} to ${hi(oe65)} for 6.5%+. The main reason is that the models were trained without survey weights: ${pct(tp.unweighted)} of the 2007-2014 sample has HbA1c 5.7%+, `
+    + `but ${pct(tp.weighted)} once weighted to US adults. ${check}Recalibrating on 2015-2016 brought 2017-2020 to ${num(cal("y57").obs_exp, 2)} for LightGBM (95% interval ${num(cal("y57").obs_exp_lo, 2)} to ${num(cal("y57").obs_exp_hi, 2)}). `
     + `For 6.5%+ the share rose from ${num(p65("2015-2016"), 1)}% to ${num(p65("2017-2020"), 1)}% between those two surveys, and the recalibrated LightGBM expected fewer diabetes-range cases than were found `
     + `(observed/expected ${num(cal("y65").obs_exp, 2)}, ${num(cal("y65").obs_exp_lo, 2)} to ${num(cal("y65").obs_exp_hi, 2)}). Calibration slopes ranged from ${lo(slopes)} to ${hi(slopes)}, where 1 is ideal.`;
 }
@@ -341,7 +443,7 @@ function renderMissed(R) {
   const m2 = r65.find((r) => r.group === "missed");
   $("missed-text").textContent = `Missed cases are younger (mean age ${num(m.age, 0)} against ${num(f.age, 0)}), leaner (BMI ${num(m.bmi, 1)} against ${num(f.bmi, 1)}) and far less often told they have high blood pressure `
     + `(${num(m.told_high_bp_pct, 0)}% against ${num(f.told_high_bp_pct, 0)}%), yet their HbA1c is about as high (${num(m.hba1c, 2)}% against ${num(f.hba1c, 2)}%). `
-    + "Age accounts for about half of the LightGBM model's split gain and body size (waist-to-height ratio and BMI) for a fifth, so a young, lean adult looks low-risk whatever their HbA1c. "
+    + `Age accounts for ${pct((R.lgb_gain || {}).age)} of the LightGBM model's split gain and body size (waist-to-height ratio and BMI) for ${pct(((R.lgb_gain || {}).whtr || 0) + ((R.lgb_gain || {}).bmi || 0))}, so a young, lean adult looks low-risk whatever their HbA1c. `
     + `Among adults with HbA1c of 6.5% or more, the ${m2.n} in the sample that the model missed were also younger (${num(m2.age, 0)} against ${num(f2.age, 0)}) and leaner `
     + `(BMI ${num(m2.bmi, 1)} against ${num(f2.bmi, 1)}), and ${num(m2.asian_pct, 0)}% of them were Asian, against ${num(f2.asian_pct, 0)}% of those found.`;
 }
@@ -350,27 +452,35 @@ function renderConclusion(R) {
   const h = R.hypotheses.H1_lgb;
   const d = R.discrimination.filter((r) => r.target === "y57");
   const auc = (m) => num(d.find((r) => r.method === m).auc, 3);
-  const model = row(R, "y57", "ada", "lgb");
-  const rule = row(R, "y57", "ada", "ada_flag");
   const us = row(R, "y57", "uspstf", "lgb");
   const usr = row(R, "y57", "uspstf", "uspstf_flag");
   const a26 = row(R, "y57", "ada2026", "ada2026_flag");
-  const L = R.leakage_ladder;
+  const ada65 = row(R, "y65", "ada", "ada_flag");
+  const lgb65 = row(R, "y65", "ada", "lgb");
+  const mv = mvRow(R, "y57", "ada", "lgb");
+  const gains = MODELS.map((m) => mvRow(R, "y57", "ada", m)).filter(Boolean).map((r) => r.sens_diff_matched);
+  const S = R.review && R.review.leakage_ladder_summary;
+  const L = S ? S.map((r) => r.mean) : R.leakage_ladder.map((r) => r.auc);
   const paras = [
     `On a survey it had never seen, a LightGBM model built from the same kind of information as the ADA risk test, plus body measurements, found ${pct(h.sens_model, 1)} of adults with HbA1c of 5.7% or more, `
-      + `against ${pct(h.sens_ada, 1)} for the ADA test at about the same number of tests. `
+      + `against ${pct(h.sens_ada, 1)} for the ADA test. `
       + (h.supported
         ? `The difference, ${pts(h.diff)} points (95% interval ${pts(h.lo)} to ${pts(h.hi)}), supports the pre-registered hypothesis H1.`
-        : `The difference, ${pts(h.diff)} points (95% interval ${pts(h.lo)} to ${pts(h.hi)}), is too small to tell apart from zero, so the pre-registered hypothesis H1 is not supported. The interval rules out a gain of more than about ${Math.ceil(100 * h.hi)} points.`),
-    `The models' AUC was higher (${auc("lgb")} against ${auc("ada_points")} for the ADA points) and they wasted fewer tests: ${pct(model.ppv, 1)} of the adults LightGBM sent for a test had HbA1c of 5.7% or more, `
-      + `against ${pct(rule.ppv, 1)} for the ADA test (${pts(model.ppv_diff)} points, ${pts(model.ppv_diff_lo)} to ${pts(model.ppv_diff_hi)}; a secondary result). `
-      + "An EBM, a plain L1 logistic regression and gradient boosting did equally well. The only step on the methods ladder that clearly helped was giving a linear model all the inputs instead of the seven ADA items; learned curves and interactions added nothing measurable.",
+        : `The difference, ${pts(h.diff)} points (95% interval ${pts(h.lo)} to ${pts(h.hi)}), is too small to tell apart from zero, so the pre-registered hypothesis H1 is not supported.`)
+      + (mv ? ` That test kept the threshold set on 2015-2016, which on 2017-2020 tested ${num(Math.abs(100 * mv.tested_diff_frozen), 1)} points ${mv.tested_diff_frozen < 0 ? "fewer" : "more"} adults than the ADA test. `
+        + `At exactly the same number of tests the models find ${pts(Math.min(...gains))} to ${pts(Math.max(...gains))} points more cases (LightGBM ${pts(mv.sens_diff_matched)}, ${pts(mv.sens_diff_matched_lo)} to ${pts(mv.sens_diff_matched_hi)}). `
+        + "That analysis was added after the test, so it suggests a modest gain of about 3 points rather than proving one." : ""),
+    `The models' AUC was higher (${auc("lgb")} against ${auc("ada_points")} for the ADA points). `
+      + (mv ? `Their higher share of cases among the people they tested mostly came from testing fewer people: at equal testing LightGBM's PPV is ${pts(mv.ppv_diff_matched)} points higher (${pts(mv.ppv_diff_matched_lo)} to ${pts(mv.ppv_diff_matched_hi)}). ` : "")
+      + "An EBM, a plain L1 logistic regression and gradient boosting did equally well; the only step on the methods ladder that clearly helped was giving a linear model all the inputs instead of the seven ADA items. Learned curves and interactions added nothing measurable.",
     `The clearer result concerns today's screening rules. At the USPSTF 2021 rule's number of tests, LightGBM found ${pct(us.sens)} of cases against the rule's ${pct(usr.sens)} `
       + `(${pts(us.sens_diff)} points, ${pts(us.sens_diff_lo)} to ${pts(us.sens_diff_hi)}), and the ADA risk test alone found more cases than the USPSTF rule while testing no more adults. `
-      + `The ADA 2026 rule finds ${pct(a26.sens)} of cases, but only by testing ${pct(a26.flag_rate)} of adults. Asian adults are the weak spot: the ADA test, the USPSTF rule and the models each found only about half of their cases.`,
-    `Honest evaluation matters. On the same 2007-2016 data, loosening the setup (a random split, already-diagnosed adults counted as cases, two questions that reveal past testing) lifts AUC from ${num(L[0].auc, 3)} to ${num(L[3].auc, 3)}, `
-      + "close to the 0.82-0.89 that published models report.",
-    "For a clinic choosing whom to send for an HbA1c test, the seven-question ADA risk test already does about as well as a machine-learning model trained on 18,456 survey participants. The rule that leaves cases behind is the USPSTF age-and-BMI rule.",
+      + `The ADA 2026 rule finds ${pct(a26.sens)} of cases, but only by testing ${pct(a26.flag_rate)} of adults.`,
+    `The models are not better everywhere. For diabetes-range HbA1c (6.5% or more) the ADA test found ${pct(ada65.sens)} of cases against ${pct(lgb65.sens)} for LightGBM, and the models found fewer cases than the ADA test among Mexican American and non-Hispanic Black adults, `
+      + "with intervals that include zero or only just exclude it. Asian adults remain the weak spot for every method except ADA 2026: about half of their cases are missed.",
+    `Honest evaluation matters. On the same 2007-2016 data, counting already-diagnosed adults as cases and adding two questions that reveal past testing lifts AUC from ${num(L[0], 3)} to ${num(L[3], 3)}, `
+      + "into the 0.82-0.89 range that published models report; a random split on its own makes no reliable difference.",
+    "For a clinic choosing whom to send for an HbA1c test, the seven-question ADA risk test comes within about 3 points of a machine-learning model trained on 18,456 survey participants. The rule that leaves cases behind is the USPSTF age-and-BMI rule.",
   ];
   $("conclusion-text").innerHTML = paras.map((p) => `<p>${p}</p>`).join("");
 }
@@ -491,23 +601,26 @@ async function main() {
   if (!R) return;
   renderFlow(R.flow);
   renderValidation(R.validation_mean);
-  renderLadder(R.leakage_ladder);
+  renderGrid(R);
+  renderLadder(R);
   if (R.main_table && Y) {
     $("results-body").hidden = false;
     renderHero(R, Y);
     renderOps(R);
     renderYield(Y);
     renderMain(R);
+    renderMatched(R);
     renderDisc(R);
     renderH(R);
     renderCycles(R);
     renderSubgroups(R);
+    renderWorse(R);
     renderMissed(R);
     renderConclusion(R);
   }
   if (e57 && e65) initCalculator(e57, e65, R);
   const redraw = () => {
-    renderLadder(R.leakage_ladder);
+    renderLadder(R);
     if (R.main_table && Y) {
       renderOps(R);
       ["rate", "dim"].forEach((id) => $(id).dispatchEvent(new Event("input")));

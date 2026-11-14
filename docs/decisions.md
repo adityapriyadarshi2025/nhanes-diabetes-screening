@@ -2,6 +2,61 @@
 
 Newest first. Each entry: what was decided and why.
 
+## 15 Nov 2026 (after the test: external review)
+
+An external review of the repo and site (14 Nov) found real problems. Every
+number below was recomputed here before anything changed. No model,
+threshold or confirmatory result changed.
+
+- **PPV claim corrected.** With the frozen thresholds LightGBM tested 1.5
+  points fewer adults than the ADA test (-3.0 to 0.0), and at equal volume PPV
+  moves with sensitivity, so "wasted fewer tests" was mostly a volume effect.
+  `src/review_extras.py` re-sets each threshold on 2017-2020 to the rule's
+  share, again in every bootstrap replicate: LightGBM +2.6 (-0.3 to +5.9), PPV
+  +1.6 (-0.2 to +3.7); L1 +3.3 (+0.8 to +5.4), EBM +3.0 (+0.5 to +5.6), value
+  model +2.9 (+0.9 to +5.4). The review's figures (+2.6, -0.3 to +5.3; PPV
+  +1.6, -0.6 to +3.8) differ only in bootstrap draws. This comparison was
+  pre-registered without intervals; the intervals are post-hoc and not
+  adjusted for six models.
+- **Negative results now discussed on the site**: 6.5%+ (ADA test 85.1%,
+  every model lower at the frozen thresholds; -6.4 to +0.9 at equal testing,
+  all intervals include zero), refitted ADA items -8.2 (-16.1 to -0.2), and
+  paired subgroup differences (Mexican American -4.8, -11.6 to +1.9; Black
+  -3.4, -6.7 to 0.0; other Hispanic +8.0, -0.1 to +14.9) in
+  `results/review/subgroup_differences.csv`.
+- **Leakage ladder.** Step 1 reused the frozen model's rounds, early-stopped
+  on 2015-2016, the rows step 1 is scored on; step 2 rested on one seed.
+  `src/ladder.py` now chooses rounds on a fifth of each step's training rows
+  and averages 20 seeds: 0.771, 0.767 (seeds 0.752-0.782), 0.807, 0.843,
+  0.846. `--original` reproduces the frozen ladder byte for byte.
+- **Weighted training (H4).** `src/dev_checks.py`: survey-weighted LightGBM
+  moves uncalibrated observed/expected on the three forward checks from
+  0.79-0.92 to 0.87-0.99 (5.7%+) and from 0.64-0.77 to 0.81-1.05 (6.5%+);
+  AUC changes by -0.012 to +0.002. Unweighted training explains most of the
+  over-prediction; the rest, largest in 2013-2014, is drift.
+- **Grid edge.** Settings beyond the edge of the grid, tuned exactly as in
+  `src/fit.py` (which reproduces the frozen settings' log-loss to six
+  decimals): best improvement 0.00004 (0.01%) for 5.7%+ and 0.00039 (0.32%)
+  for 6.5%+. Frozen models kept.
+- **Site.** Data notes (the pre-pandemic file and its weights, top-coding,
+  `RIDRETH3` from 2011) and the literature checks are on the page; the results
+  text is baked into `index.html` by `scripts/prerender.py`, so it reads
+  without JavaScript; a contributions section was added.
+- **Repo.** The download script verifies the committed manifest (`--verify`,
+  `--update-manifest`). The README explains `--force`; a scratch rerun with
+  `--force` reproduced all eight `results/test` files byte for byte. PREREG.md
+  separates its writing date (19 Oct) from its first commit (28 Oct).
+  `scripts/recheck_h1.py` is in the repo, and the LightGBM split-gain shares
+  quoted on the site (age 49%, waist-to-height 13%, BMI 7.5%) are exported by
+  `src/export_web.py`.
+- **Code hashes.** `models/frozen.json` hashes every file in `src/` at the
+  freeze. `export_web.py` and `ladder.py` changed since (site export; ladder
+  fix). Every file that produces the test (`models.py`, `fit.py`,
+  `evaluate.py`, `test_once.py`, `config.py`, `harmonise.py`, `cohort.py`,
+  `scores.py`) is unchanged.
+- **Gestational diabetes code 3** checked in the codebook pages: "Borderline"
+  in `RHQ_E` (21 women) and `P_RHQ` (17 women). Settled.
+
 ## 14 Nov 2026 (week 4, one-time test)
 
 - **Test run once** with `python -m src.test_once` at 03:19 IST, three minutes
@@ -100,7 +155,8 @@ Newest first. Each entry: what was decided and why.
 - **Refused or don't know** answers become missing, never "no".
 - **Gestational diabetes**: `RHQ162` = 1 is yes; women never pregnant
   (`RHQ131` = 2) and men are "no". "Borderline" (`RHQ162` = 3) counts as no
-  diagnosis; check this code against the codebook pages.
+  diagnosis; check this code against the codebook pages. (Checked 15 Nov
+  2026: code 3 is "Borderline" in the codebooks.)
 - **Physical activity**: three versions are stored (any of five activity
   types, leisure-time only, and moderate-equivalent minutes a week). Which one
   scores the ADA item is fixed in `scores.py` before any model is trained.
