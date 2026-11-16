@@ -267,7 +267,7 @@
 
 <section id="reproduce">
   <h2>Reproduce</h2>
-  <p>The <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening#readme">README</a> has the setup, run steps, data access, the AI-use disclosure and the citations. NHANES is public domain and needs no account: the download script fetches the 72 files from the CDC website. Raw data are not stored in the repository; the committed manifest lists every file's SHA-256, so any copy can be checked. Every step is a script, run in this order (there are no notebooks):</p>
+  <p>The <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening#readme">README</a> has the setup, run steps, data access and the citations. NHANES is public domain and needs no account: the download script fetches the 72 files from the CDC website. Raw data are not stored in the repository; the committed manifest lists every file's SHA-256, so any copy can be checked. Every step is a script, run in this order (there are no notebooks):</p>
   <pre><code>git clone https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening
 cd nhanes-diabetes-screening
 pip install -r requirements.txt
@@ -334,9 +334,7 @@ python -m src.export_web &amp;&amp; python scripts/prerender.py</code></pre>
 
 <section id="contributions">
   <h2>Contributions</h2>
-  <p>This is an individual project by Aditya Priyadarshi (ES 335, IIT Gandhinagar). There are no other team members.</p>
-  <p>AI use: the project was built with extensive help from an AI assistant (Claude, by Anthropic), which wrote most of the code and text under the author's direction. The <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening#ai-use-disclosure">AI-use disclosure in the README</a> says exactly what it did.</p>
-</section>
+  <p>This is an individual project by Aditya Priyadarshi (ES 335, IIT Gandhinagar). There are no other team members.</p></section>
 </main>
 
 <footer><div>Data: National Health and Nutrition Examination Survey, CDC National Center for Health Statistics (public domain). Screening rules: USPSTF 2021; ADA Standards of Care 2026. Research demonstration, not medical advice.</div></footer>

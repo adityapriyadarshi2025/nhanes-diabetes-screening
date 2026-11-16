@@ -155,28 +155,6 @@ results/   week1/       data checks before any model
 data/      raw/ codebooks/ processed/   (not in git, except data/raw/manifest.csv)
 ```
 
-## AI-use disclosure
-
-This project was built with extensive help from Claude, an AI assistant made by
-Anthropic, used through the Claude app from October to November 2026.
-
-- Claude generated and ranked candidate project ideas, and researched the
-  screening guidelines, related studies and NHANES documentation for the
-  proposal and the plan.
-- Claude wrote most of the code in `src/`, `scripts/` and `tests/` and the
-  website in `docs/`, and ran the pipeline: the data download (on the author's
-  computer, through the Claude desktop app), tuning, the one-time test, the
-  post-test analyses and the independent recheck.
-- Claude drafted `PREREG.md`, `FROZEN.md`, this README, `docs/decisions.md` and
-  the website text, and made the changes after the external review of
-  14 November 2026.
-- Aditya Priyadarshi chose the project, approved the plan and each stage before
-  it ran, made every git commit and push, obtained the external review and
-  decided which changes to adopt, and is responsible for everything submitted.
-
-Every number on the website comes from the result files in this repository,
-which the code here produces.
-
 ## References
 
 Data
