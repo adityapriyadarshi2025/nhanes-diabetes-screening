@@ -13,7 +13,7 @@ from pathlib import Path
 from playwright.async_api import async_playwright
 
 DOCS = Path(__file__).resolve().parents[1] / "docs"
-IDS = ["hero-lead", "waffles", "h1-callout", "flow-table", "validation-table", "grid-text", "ladder-text", "yield-table",
+IDS = ["hero-lead", "waffles", "brief-list", "h1-callout", "flow-table", "validation-table", "grid-text", "ladder-text", "yield-table",
        "main-table", "matched-table", "matched-text", "disc-table", "h3-table", "h3-text", "h2-text", "h4-text", "h5-text",
        "worse-text", "worse-table", "missed-table", "missed-text", "conclusion-text"]
 SHOWN = ["results-body", "waffle-legend"]

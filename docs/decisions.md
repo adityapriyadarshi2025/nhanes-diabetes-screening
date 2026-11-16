@@ -2,6 +2,29 @@
 
 Newest first. Each entry: what was decided and why.
 
+## 16 Nov 2026 (website)
+
+No number on the page changed.
+
+- **Dark theme.** The site moved to a dark palette. Chart colours were
+  re-checked for colour-blind separation and contrast against the dark
+  background, so the yield chart now draws three lines (ADA points, EBM,
+  LightGBM) and its table keeps all five methods.
+- **Structure.** The ten sections that follow the reasoning, from the question
+  to the conclusion, are numbered. A short summary of the findings, with links
+  to the evidence, sits under the opening charts. "Try it" now follows "Who
+  the model misses", because the calculator shows why young, lean adults are
+  missed.
+- **Leakage ladder drawn as dots.** Bars on an axis starting at 0.70
+  exaggerated the differences between steps; dots with their seed ranges and a
+  line at the honest setup show the same numbers.
+- **Group chart.** The BMI 23 versions of the rules change nothing outside
+  Asian adults, so they are drawn only for that group. The EBM is left out of
+  this chart to keep it readable; its numbers stay in the text and tables.
+- **Smaller Plotly file.** `docs/assets/plotly.min.js` is now the "basic"
+  build of the same version (2.35.2), about 1 MB instead of 4.6 MB. The page
+  uses only scatter and bar charts, which that build includes.
+
 ## 15 Nov 2026 (after the test: external review)
 
 An external review of the repo and site (14 Nov) found real problems. Every

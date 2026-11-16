@@ -4,14 +4,18 @@ const LABEL = {
   ada_points: "ADA risk test (points)", ada_refit: "Refitted ADA items", l1: "L1 logistic", ebm: "EBM",
   ebm_pairs: "EBM with pairs", lgb: "LightGBM classifier", lgb_value: "LightGBM value model",
 };
+const T = {
+  ink: "#e6edf5", ink2: "#b6c2d2", muted: "#8f9db2", grid: "#26364d", card: "#162131", raised: "#1d2b3f",
+  line: "#3b4e6b", amber: "#f2b441", blue: "#3987e5", bar: "#6a7fa0", accent: "#45cbbd",
+};
 const COLOR = {
-  ada_flag: "#6b7a90", ada_points: "#6b7a90", uspstf_flag: "#9c6644", uspstf_flag_asian23: "#c99a74",
-  ada2026_flag: "#8a5a9e", ada_flag_asian23: "#a7b1c2", ada_refit: "#a7b1c2", l1: "#c98a0b", ebm: "#2f6fde",
-  ebm_pairs: "#8fb0ec", lgb: "#0e7470", lgb_value: "#5fb3ad",
+  ada_flag: "#d95926", ada_points: "#d95926", ada_flag_asian23: "#d95926", ada_flag_selfbmi: "#d95926", ada_refit: "#ec9a6d",
+  uspstf_flag: "#3987e5", uspstf_flag_asian23: "#3987e5", ada2026_flag: T.ink2,
+  l1: "#c98500", ebm: "#9085e9", ebm_pairs: "#b9b1f2", lgb: "#199e70", lgb_value: "#5cc59c",
 };
 const OPS = { ada: "ADA risk test", uspstf: "USPSTF 2021", ada2026: "ADA 2026" };
 const MODELS = ["ada_refit", "l1", "ebm", "ebm_pairs", "lgb", "lgb_value"];
-const FONT = { family: "Public Sans, system-ui, sans-serif", size: 13, color: "#17243b" };
+const FONT = { family: "Public Sans, system-ui, sans-serif", size: 13, color: T.ink };
 const CONFIG = { displayModeBar: false, responsive: true };
 
 const pct = (x, d = 0) => (x === null || x === undefined || Number.isNaN(x) ? "–" : `${(100 * x).toFixed(d)}%`);
@@ -38,10 +42,17 @@ const $ = (id) => document.getElementById(id);
 
 function layout(extra) {
   return Object.assign({
-    font: FONT, paper_bgcolor: "#fff", plot_bgcolor: "#fff", margin: { l: 60, r: 20, t: 30, b: 50 },
-    xaxis: { gridcolor: "#e6e9ee", zeroline: false }, yaxis: { gridcolor: "#e6e9ee", zeroline: false },
-    showlegend: false, hoverlabel: { font: FONT },
+    font: FONT, paper_bgcolor: "rgba(0,0,0,0)", plot_bgcolor: "rgba(0,0,0,0)", margin: { l: 60, r: 20, t: 30, b: 50 },
+    xaxis: { gridcolor: T.grid, zeroline: false, linecolor: T.line }, yaxis: { gridcolor: T.grid, zeroline: false, linecolor: T.line },
+    showlegend: false, legend: { font: { color: T.ink2 } },
+    hoverlabel: { font: { ...FONT, color: T.ink }, bgcolor: T.raised, bordercolor: T.line },
   }, extra);
+}
+
+function plot(id, traces, lay) {
+  const el = $(id);
+  el.style.height = lay.height ? `${lay.height}px` : "";
+  return Plotly.react(el, traces, { ...lay, height: lay.height || el.clientHeight }, CONFIG);
 }
 
 function table(el, head, rows, cls = () => "") {
@@ -81,16 +92,20 @@ function renderLadder(R) {
   const y = ord.map((r) => (narrow ? wrap(r.label, 22) : r.label));
   const x = ord.map((r) => (S ? r.mean : r.auc));
   const end = ord.map((r) => (S ? r.max : r.auc));
-  Plotly.newPlot("ladder-chart", [{
-    type: "bar", orientation: "h", x, y, marker: { color: x.map((_, i) => (i === x.length - 1 ? "#0e7470" : "#a7b1c2")) },
-    error_x: S ? { type: "data", symmetric: false, array: ord.map((r) => r.max - r.mean), arrayminus: ord.map((r) => r.mean - r.min), color: "#17243b", thickness: 1.2, width: 4 } : undefined,
+  const honest = x[x.length - 1];
+  plot("ladder-chart", [{
+    type: "scatter", mode: "markers", x, y, cliponaxis: false,
+    marker: { size: 13, color: x.map((_, i) => (i === x.length - 1 ? T.accent : T.ink2)), line: { color: T.card, width: 2 } },
+    error_x: S ? { type: "data", symmetric: false, array: ord.map((r) => r.max - r.mean), arrayminus: ord.map((r) => r.mean - r.min), color: T.muted, thickness: 2, width: 0 } : undefined,
     customdata: S ? ord.map((r) => [r.min, r.max]) : undefined,
     hovertemplate: S ? "%{y}<br>mean AUC %{x:.3f}, seeds %{customdata[0]:.3f} to %{customdata[1]:.3f}<extra></extra>" : "%{y}<br>AUC %{x:.3f}<extra></extra>",
   }], layout({
-    annotations: x.map((v, i) => ({ x: end[i], y: y[i], xshift: 6, xanchor: "left", text: v.toFixed(3), showarrow: false, font: { size: 12 } })),
-    margin: { l: narrow ? 160 : 290, r: 30, t: 10, b: 40 }, height: narrow ? 340 : undefined,
-    xaxis: { range: [0.7, 0.9], title: narrow ? "AUC, HbA1c 5.7%+" : "AUC for HbA1c 5.7%+ on held-out data", nticks: narrow ? 3 : undefined, gridcolor: "#e6e9ee", zeroline: false },
-  }), CONFIG);
+    annotations: x.map((v, i) => ({ x: end[i], y: y[i], xshift: 8, xanchor: "left", text: v.toFixed(3), showarrow: false, font: { size: 12, color: T.ink2 } })),
+    shapes: [{ type: "line", x0: honest, x1: honest, yref: "paper", y0: 0, y1: 1, layer: "below", line: { color: T.accent, width: 1, dash: "dot" } }],
+    margin: { l: narrow ? 160 : 290, r: 40, t: 10, b: 45 }, height: narrow ? 340 : undefined,
+    xaxis: { range: [0.74, 0.88], title: narrow ? "AUC, HbA1c 5.7%+" : "AUC for HbA1c 5.7%+ on held-out data", nticks: narrow ? 4 : undefined, gridcolor: T.grid, zeroline: false },
+    yaxis: { gridcolor: T.grid, zeroline: false },
+  }));
   if (S) {
     const m = S.map((r) => r.mean);
     $("ladder-text").textContent = `A random split on its own changes AUC by ${signed(m[1] - m[0], 3)} on average, well inside its seed-to-seed range (${num(S[1].min, 3)} to ${num(S[1].max, 3)}), so it shows nothing either way. `
@@ -175,23 +190,23 @@ function renderOps(R) {
     traces.push({
       type: "scatter", mode: "markers", xaxis: k === 0 ? "x" : `x${k + 1}`, yaxis: narrow && k > 0 ? `y${k + 1}` : "y",
       x: rows.map((r) => r.sens), y: names.map((m) => (m.endsWith("_flag") ? "The rule itself" : LABEL[m])),
-      error_x: { type: "data", symmetric: false, array: rows.map((r) => r.sens_hi - r.sens), arrayminus: rows.map((r) => r.sens - r.sens_lo), color: "#7a8494", thickness: 1.5, width: 0 },
+      error_x: { type: "data", symmetric: false, array: rows.map((r) => r.sens_hi - r.sens), arrayminus: rows.map((r) => r.sens - r.sens_lo), color: T.muted, thickness: 1.5, width: 0 },
       marker: { size: 10, color: names.map((m) => COLOR[m]) },
       hovertemplate: rows.map((r, i) => `${LABEL[names[i]]}<br>sensitivity ${pct(r.sens, 1)} (${pct(r.sens_lo, 1)} to ${pct(r.sens_hi, 1)})<br>share tested ${pct(r.flag_rate, 1)}<extra></extra>`),
     });
   });
-  const lay = layout({ margin: { l: narrow ? 150 : 170, r: 20, t: narrow ? 30 : 40, b: 50 }, yaxis: { autorange: "reversed", gridcolor: "#e6e9ee" }, annotations: [] });
+  const lay = layout({ margin: { l: narrow ? 150 : 170, r: 20, t: narrow ? 30 : 40, b: 50 }, yaxis: { autorange: "reversed", gridcolor: T.grid }, annotations: [] });
   if (narrow) lay.height = 860;
   const n = ops.length;
   ops.forEach((op, k) => {
     const rs = [ruleOf[op], ...methods].map((m) => row(R, "y57", op, m));
     const span = Math.max(...rs.map((r) => r.sens_hi)) - Math.min(...rs.map((r) => r.sens_lo));
-    const xa = { tickformat: span < 0.05 ? ".1%" : ".0%", gridcolor: "#e6e9ee", zeroline: false, title: !narrow || k === n - 1 ? "sensitivity" : "" };
+    const xa = { tickformat: span < 0.05 ? ".1%" : ".0%", gridcolor: T.grid, zeroline: false, title: !narrow || k === n - 1 ? "sensitivity" : "" };
     const text = `${OPS[op]}: ${pct(rs[0].flag_rate)} tested`;
     if (narrow) {
       const dom = [1 - (k + 1) / n + 0.075, 1 - k / n - 0.035];
       lay[k === 0 ? "xaxis" : `xaxis${k + 1}`] = { ...xa, domain: [0, 1], anchor: k === 0 ? "y" : `y${k + 1}`, nticks: 5 };
-      lay[k === 0 ? "yaxis" : `yaxis${k + 1}`] = { domain: dom, anchor: k === 0 ? "x" : `x${k + 1}`, autorange: "reversed", gridcolor: "#e6e9ee", zeroline: false };
+      lay[k === 0 ? "yaxis" : `yaxis${k + 1}`] = { domain: dom, anchor: k === 0 ? "x" : `x${k + 1}`, autorange: "reversed", gridcolor: T.grid, zeroline: false };
       lay.annotations.push({ text, xref: "paper", yref: "paper", x: 0.5, y: dom[1] + 0.008, yanchor: "bottom", showarrow: false, font: { size: 13 } });
     } else {
       const w = 1 / n;
@@ -199,7 +214,7 @@ function renderOps(R) {
       lay.annotations.push({ text, xref: "paper", yref: "paper", x: k * w + w / 2, y: 1.08, showarrow: false, font: { size: 13 } });
     }
   });
-  Plotly.newPlot("ops-chart", traces, lay, CONFIG);
+  plot("ops-chart", traces, lay);
 }
 
 function renderYield(Y) {
@@ -209,7 +224,7 @@ function renderYield(Y) {
     $("rate-out").textContent = `${Math.round(rate * 100)}%`;
     const Yt = Y[t];
     const show = ["ada_points", "l1", "ebm", "lgb", "lgb_value"];
-    const traces = show.map((m) => ({
+    const traces = ["ada_points", "ebm", "lgb"].map((m) => ({
       type: "scatter", mode: "lines", name: LABEL[m], x: Yt.curves[m].map((p) => p[1]), y: Yt.curves[m].map((p) => p[2]),
       line: { color: COLOR[m], width: m === "lgb" ? 3 : 2, shape: m === "ada_points" ? "hv" : "linear" },
       hovertemplate: `${LABEL[m]}<br>tested %{x:.0%}, sensitivity %{y:.1%}<extra></extra>`,
@@ -220,21 +235,21 @@ function renderYield(Y) {
     rules.forEach((m) => {
       const [fr, se] = Yt.rules[m];
       traces.push({ type: "scatter", mode: "markers", name: LABEL[m], showlegend: false, x: [fr], y: [se], cliponaxis: false,
-        marker: { size: 11, color: COLOR[m], symbol: "diamond", line: { color: "#fff", width: 1 } },
+        marker: { size: 11, color: COLOR[m], symbol: "diamond", line: { color: T.card, width: 1 } },
         hovertemplate: `${LABEL[m]}<br>tested %{x:.0%}, sensitivity %{y:.1%}<extra></extra>` });
     });
     const annotations = rules.map((m) => ({
       x: Yt.rules[m][0], y: Yt.rules[m][1], text: LABEL[m], ax: offset[m][0], ay: offset[m][1], showarrow: true, arrowhead: 0,
-      arrowwidth: 1, arrowcolor: "#4a5568", font: { size: 12, color: "#17243b" }, bgcolor: "rgba(255,255,255,0.9)",
+      arrowwidth: 1, arrowcolor: T.ink2, font: { size: 12, color: T.ink }, bgcolor: "rgba(22,33,49,0.94)",
     }));
-    Plotly.react("yield-chart", traces, layout({
+    plot("yield-chart", traces, layout({
       showlegend: true, annotations,
       legend: narrow ? { orientation: "h", x: 0, y: -0.25, yanchor: "top" } : { orientation: "h", x: 0, y: 1.02, yanchor: "bottom" },
-      margin: narrow ? { l: 55, r: 15, t: 20, b: 200 } : { l: 60, r: 20, t: 50, b: 60 }, height: narrow ? 560 : undefined,
-      xaxis: { title: "share of adults sent for an HbA1c test", tickformat: ".0%", range: [0, 0.92], gridcolor: "#e6e9ee", zeroline: false },
-      yaxis: { title: "share of cases found", tickformat: ".0%", range: [0, 1.02], gridcolor: "#e6e9ee", zeroline: false },
-      shapes: [{ type: "line", x0: rate, x1: rate, y0: 0, y1: 1, line: { color: "#17243b", width: 1, dash: "dot" } }],
-    }), CONFIG);
+      margin: narrow ? { l: 55, r: 15, t: 20, b: 200 } : { l: 60, r: 20, t: 50, b: 60 }, height: narrow ? 560 : 430,
+      xaxis: { title: "share of adults sent for an HbA1c test", tickformat: ".0%", range: [0, 0.92], gridcolor: T.grid, zeroline: false },
+      yaxis: { title: "share of cases found", tickformat: ".0%", range: [0, 1.02], gridcolor: T.grid, zeroline: false },
+      shapes: [{ type: "line", x0: rate, x1: rate, y0: 0, y1: 1, line: { color: T.ink, width: 1, dash: "dot" } }],
+    }));
     const idx = Math.round(rate * 100) - 1;
     table($("yield-table"), ["Method", "Share tested", "Cases found", "Tested adults who are cases", "Tests per case found"],
       show.map((m) => {
@@ -349,24 +364,24 @@ function renderH(R) {
 
 function renderCycles(R) {
   const H = R.hba1c_by_cycle;
-  Plotly.newPlot("hba1c-cycle-chart", [{
+  plot("hba1c-cycle-chart", [{
     type: "scatter", mode: "lines+markers", x: H.map((r) => cyc(r.cycle)), y: H.map((r) => r.pct_57 / 100),
-    line: { color: "#c98a0b", width: 2 }, marker: { size: 8 }, hovertemplate: "%{x}: %{y:.1%}<extra></extra>",
-  }], layout({ xaxis: { type: "category", gridcolor: "#e6e9ee", automargin: true }, yaxis: { tickformat: ".0%", title: "HbA1c 5.7%+", gridcolor: "#e6e9ee" }, margin: { l: 60, r: 20, t: 20, b: 40 } }), CONFIG);
+    line: { color: T.amber, width: 2 }, marker: { size: 8 }, hovertemplate: "%{x}: %{y:.1%}<extra></extra>",
+  }], layout({ xaxis: { type: "category", gridcolor: T.grid, automargin: true }, yaxis: { tickformat: ".0%", title: "HbA1c 5.7%+", gridcolor: T.grid }, margin: { l: 60, r: 20, t: 20, b: 40 } }));
   const draw = () => {
     const m = $("cycle-model").value;
     const rows = R.calibration_by_cycle.filter((r) => r.model === m && r.target === "y57");
     const raw = rows.filter((r) => r.kind.startsWith("uncalibrated")).sort((a, b) => a.cycle.localeCompare(b.cycle));
     const cal = rows.filter((r) => r.kind.startsWith("calibrated"));
-    Plotly.react("oe-cycle-chart", [
-      { type: "scatter", mode: "lines+markers", name: "before recalibration", x: raw.map((r) => cyc(r.cycle)), y: raw.map((r) => r.obs_exp), line: { color: "#7a8494" }, marker: { size: 8 } },
-      { type: "scatter", mode: "markers", name: "recalibrated on 2015-16", x: cal.map((r) => cyc(r.cycle)), y: cal.map((r) => r.obs_exp), marker: { size: 12, color: "#0e7470", symbol: "diamond" } },
+    plot("oe-cycle-chart", [
+      { type: "scatter", mode: "lines+markers", name: "before recalibration", x: raw.map((r) => cyc(r.cycle)), y: raw.map((r) => r.obs_exp), line: { color: T.muted }, marker: { size: 8 } },
+      { type: "scatter", mode: "markers", name: "recalibrated on 2015-16", x: cal.map((r) => cyc(r.cycle)), y: cal.map((r) => r.obs_exp), marker: { size: 12, color: T.accent, symbol: "diamond" } },
     ], layout({
       showlegend: true, legend: { orientation: "h", y: -0.25 }, margin: { l: 60, r: 10, t: 20, b: 70 },
-      xaxis: { type: "category", categoryorder: "array", categoryarray: ["2011-12", "2013-14", "2015-16", "2017-20"], gridcolor: "#e6e9ee" },
-      yaxis: { title: "observed / expected", gridcolor: "#e6e9ee" },
-      shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 1, y1: 1, line: { color: "#17243b", width: 1, dash: "dot" } }],
-    }), CONFIG);
+      xaxis: { type: "category", categoryorder: "array", categoryarray: ["2011-12", "2013-14", "2015-16", "2017-20"], gridcolor: T.grid },
+      yaxis: { title: "observed / expected", gridcolor: T.grid },
+      shapes: [{ type: "line", xref: "paper", x0: 0, x1: 1, y0: 1, y1: 1, line: { color: T.ink, width: 1, dash: "dot" } }],
+    }));
   };
   $("cycle-model").addEventListener("input", draw);
   draw();
@@ -396,26 +411,35 @@ function renderCycles(R) {
 function renderSubgroups(R) {
   const draw = () => {
     const dim = $("dim").value;
-    const methods = dim === "race" ? ["ada_flag", "ada_flag_asian23", "uspstf_flag", "uspstf_flag_asian23", "ebm", "lgb"] : ["ada_flag", "uspstf_flag", "ebm", "lgb"];
+    const methods = dim === "race" ? ["ada_flag", "uspstf_flag", "lgb", "ada_flag_asian23", "uspstf_flag_asian23"] : ["ada_flag", "uspstf_flag", "lgb"];
+    const SYMBOL = { ada_flag: "circle", ada_flag_asian23: "circle-open", uspstf_flag: "square", uspstf_flag_asian23: "square-open", lgb: "diamond" };
     const rows = R.subgroups.filter((r) => r.dimension === dim);
     const groups = [...new Set(rows.map((r) => r.group))].sort();
-    const traces = methods.map((m, k) => {
+    const shown = (m, g) => !m.endsWith("_asian23") || g === "Non-Hispanic Asian";
+    const slot = (m, g) => {
+      const vis = methods.filter((x) => shown(x, g));
+      return (vis.indexOf(m) - (vis.length - 1) / 2) * 0.15;
+    };
+    const traces = methods.map((m) => {
       const rs = groups.map((g) => rows.find((r) => r.group === g && r.method === m));
-      const off = (k - (methods.length - 1) / 2) * 0.13;
+      const on = groups.map((g) => shown(m, g));
       return {
-        type: "scatter", mode: "markers", name: LABEL[m], x: rs.map((r) => r.sens), y: groups.map((_, i) => i + off),
-        error_x: { type: "data", symmetric: false, array: rs.map((r) => (Number.isFinite(r.sens_hi) ? r.sens_hi - r.sens : 0)), arrayminus: rs.map((r) => (Number.isFinite(r.sens_lo) ? r.sens - r.sens_lo : 0)), color: COLOR[m], thickness: 1.2, width: 0 },
-        marker: { size: 9, color: COLOR[m] },
+        type: "scatter", mode: "markers", name: LABEL[m], cliponaxis: false, x: rs.map((r, i) => (on[i] ? r.sens : null)), y: groups.map((g, i) => i + slot(m, g)),
+        error_x: { type: "data", symmetric: false, array: rs.map((r, i) => (on[i] && Number.isFinite(r.sens_hi) ? r.sens_hi - r.sens : 0)), arrayminus: rs.map((r, i) => (on[i] && Number.isFinite(r.sens_lo) ? r.sens - r.sens_lo : 0)), color: COLOR[m], thickness: 1.2, width: 0 },
+        marker: { size: 10, color: COLOR[m], symbol: SYMBOL[m], line: { color: SYMBOL[m].endsWith("open") ? COLOR[m] : T.card, width: SYMBOL[m].endsWith("open") ? 2 : 1 } },
         hovertemplate: rs.map((r) => `${LABEL[m]}, ${r.group}<br>sensitivity ${pct(r.sens, 1)} (${pct(r.sens_lo, 1)} to ${pct(r.sens_hi, 1)})<br>${r.cases} cases among ${r.n} adults<extra></extra>`),
       };
     });
     const narrow = NARROW.matches;
-    Plotly.react("subgroup-chart", traces, layout({
-      showlegend: true, legend: { orientation: "h", y: -0.15 }, margin: { l: narrow ? 125 : 230, r: 20, t: 10, b: 90 },
-      xaxis: { title: "share of cases found", tickformat: ".0%", range: [0, 1.02], gridcolor: "#e6e9ee", zeroline: false },
-      yaxis: { tickvals: groups.map((_, i) => i), ticktext: groups.map((g) => { const r = rows.find((x) => x.group === g); const t = `${g} (${r.cases} cases)`; return narrow ? wrap(t, 18) : t; }), autorange: "reversed", gridcolor: "#fff", zeroline: false },
-      height: 160 + groups.length * 70,
-    }), CONFIG);
+    const lows = rows.filter((r) => methods.includes(r.method) && shown(r.method, r.group) && Number.isFinite(r.sens_lo)).map((r) => r.sens_lo);
+    const x0 = Math.max(0, Math.floor(10 * Math.min(...lows)) / 10 - 0.05);
+    const b = narrow ? 70 + 26 * methods.length : 110;
+    plot("subgroup-chart", traces, layout({
+      showlegend: true, legend: { orientation: "h", x: 0, y: 0, yref: "container", yanchor: "bottom" }, margin: { l: narrow ? 125 : 230, r: 20, t: 10, b },
+      xaxis: { title: "share of cases found", tickformat: ".0%", range: [x0, 1.02], gridcolor: T.grid, zeroline: false },
+      yaxis: { tickvals: groups.map((_, i) => i), ticktext: groups.map((g) => { const r = rows.find((x) => x.group === g); const t = `${g} (${r.cases.toLocaleString("en-US")} cases)`; return narrow ? wrap(t, 18) : t; }), autorange: "reversed", gridcolor: T.card, zeroline: false },
+      height: b + 30 + groups.length * (narrow ? 80 : 70),
+    }));
   };
   $("dim").addEventListener("input", draw);
   draw();
@@ -434,7 +458,7 @@ function renderMissed(R) {
   const rows = R.missed_profile.filter((r) => r.target === "y57");
   const f = rows.find((r) => r.group === "found");
   const m = rows.find((r) => r.group === "missed");
-  const items = [["Adults in the sample", (r) => r.n], ["Mean age", (r) => num(r.age, 1)], ["Mean BMI", (r) => num(r.bmi, 1)],
+  const items = [["Adults in the sample", (r) => r.n.toLocaleString("en-US")], ["Mean age", (r) => num(r.age, 1)], ["Mean BMI", (r) => num(r.bmi, 1)],
     ["Men", (r) => `${num(r.men_pct, 0)}%`], ["Mean HbA1c", (r) => `${num(r.hba1c, 2)}%`], ["Family history of diabetes", (r) => `${num(r.family_history_pct, 0)}%`],
     ["Told high blood pressure", (r) => `${num(r.told_high_bp_pct, 0)}%`], ["Non-Hispanic Asian", (r) => `${num(r.asian_pct, 0)}%`], ["Non-Hispanic Black", (r) => `${num(r.black_pct, 0)}%`]];
   table($("missed-table"), ["", "Sent for a test", "Missed"], items.map(([k, g]) => [k, g(f), g(m)]));
@@ -576,11 +600,11 @@ function runCalculator() {
     </ul>
     <div class="chart short" id="contrib-chart"></div>
     <p class="note">Arm, leg length and household income are not asked: they are set to typical values for your age, sex and size and left out of the chart, as is any blank field${x.filled.length ? ` (filled: ${x.filled.map((k) => PRETTY[k].toLowerCase()).join(", ")})` : ""}.</p>`;
-  Plotly.newPlot("contrib-chart", [{
+  plot("contrib-chart", [{
     type: "bar", orientation: "h", x: top.map((c) => c[1]), y: top.map((c) => PRETTY[c[0]] || c[0]),
-    marker: { color: top.map((c) => (c[1] > 0 ? "#c98a0b" : "#2f6fde")) }, hovertemplate: "%{y}: %{x:+.2f} log-odds<extra></extra>",
-  }], layout({ margin: { l: 150, r: 20, t: 30, b: 40 }, title: { text: "What moves this estimate (log-odds, HbA1c 5.7%+)", font: { size: 13 }, x: 0 },
-    xaxis: { zeroline: true, zerolinecolor: "#17243b", gridcolor: "#e6e9ee" } }), CONFIG);
+    marker: { color: top.map((c) => (c[1] > 0 ? T.amber : T.blue)) }, hovertemplate: "%{y}: %{x:+.2f} log-odds<extra></extra>",
+  }], layout({ margin: { l: 20, r: 20, t: 40, b: 40 }, height: 330, title: { text: "What moves this estimate (log-odds, HbA1c 5.7%+)", font: { size: 13 }, x: 0.02 },
+    xaxis: { zeroline: true, zerolinecolor: T.ink, gridcolor: T.grid }, yaxis: { automargin: true, gridcolor: T.grid } }));
 }
 
 function initCalculator(e57, e65, R) {
@@ -596,6 +620,70 @@ function initCalculator(e57, e65, R) {
   runCalculator();
 }
 
+function renderBrief(R) {
+  const h = R.hypotheses.H1_lgb;
+  const mv = mvRow(R, "y57", "ada", "lgb");
+  const gains = MODELS.map((m) => mvRow(R, "y57", "ada", m)).filter(Boolean).map((r) => r.sens_diff_matched);
+  const us = row(R, "y57", "uspstf", "lgb");
+  const usr = row(R, "y57", "uspstf", "uspstf_flag");
+  const ada65 = row(R, "y65", "ada", "ada_flag");
+  const lgb65 = row(R, "y65", "ada", "lgb");
+  const g = (grp, m) => R.subgroups.find((r) => r.dimension === "race" && r.group === grp && r.method === m);
+  const S = R.review && R.review.leakage_ladder_summary;
+  const L = S ? S.map((r) => r.mean) : R.leakage_ladder.map((r) => r.auc);
+  const items = [
+    ["key", h.supported ? "The pre-registered test supports H1" : "The pre-registered test found no clear gain",
+      `At the ADA risk test's number of tests, LightGBM found ${pts(h.diff)} points more cases (95% interval ${pts(h.lo)} to ${pts(h.hi)}), so H1 is ${h.supported ? "supported" : "not supported"}.`,
+      "#results", "The confirmatory result"],
+    mv && ["", `At exactly equal testing, the models find ${pts(Math.min(...gains))} to ${pts(Math.max(...gains))} points more`,
+      `With every threshold re-set to test the same share as the ADA test, LightGBM gains ${pts(mv.sens_diff_matched)} (${pts(mv.sens_diff_matched_lo)} to ${pts(mv.sens_diff_matched_hi)}). Added after the test, so suggestive only.`,
+      "#equal-testing", "Same number of tests"],
+    ["", "The USPSTF 2021 rule misses the most cases",
+      `It found ${pct(usr.sens)} of cases while testing ${pct(usr.flag_rate)} of adults. At the same number of tests LightGBM found ${pct(us.sens)}: ${pts(us.sens_diff)} points (${pts(us.sens_diff_lo)} to ${pts(us.sens_diff_hi)}).`,
+      "#by-rule", "Cases found at each rule"],
+    ["", "The models are not better everywhere",
+      `For HbA1c of 6.5% or more the ADA test found ${pct(ada65.sens, 1)} of cases against ${pct(lgb65.sens, 1)} for LightGBM, and LightGBM found fewer among Mexican American and non-Hispanic Black adults.`,
+      "#worse", "Where the models did worse"],
+    g("Non-Hispanic Asian", "lgb") && ["", "About half of Asian adults' cases are missed",
+      `The ADA test found ${pct(g("Non-Hispanic Asian", "ada_flag").sens)} of their cases (${pct(g("Non-Hispanic Asian", "ada_flag_asian23").sens)} with a BMI 23 cut-off) and LightGBM ${pct(g("Non-Hispanic Asian", "lgb").sens)}, against ${pct(g("Non-Hispanic White", "ada_flag").sens)} among non-Hispanic White adults.`,
+      "#groups", "Groups of adults"],
+    ["", `Common shortcuts lift AUC from ${num(L[0], 3)} to ${num(L[3], 3)}`,
+      "Counting already-diagnosed adults as cases and adding two questions that reveal past testing reach the range published models report; a random split alone makes no reliable difference.",
+      "#ladder", "Leakage ladder"],
+  ].filter(Boolean);
+  $("brief-list").innerHTML = items.map(([cls, title, body, href, link]) => `<li${cls ? ` class="${cls}"` : ""}><strong>${title}</strong><span>${body}</span><a href="${href}">${link}</a></li>`).join("");
+}
+
+function initNav() {
+  const nav = document.querySelector("header.top nav");
+  if (!nav) return;
+  const links = [...nav.querySelectorAll('a[href^="#"]')];
+  const targets = links.map((a) => [a, $(a.getAttribute("href").slice(1))]).filter(([, el]) => el);
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let current = null;
+  let queued = false;
+  const update = () => {
+    queued = false;
+    const line = window.innerHeight * 0.3;
+    let active = null;
+    targets.forEach(([a, el]) => { if (el.getBoundingClientRect().top <= line) active = a; });
+    if (active && window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2) active = targets[targets.length - 1][0];
+    if (active === current) return;
+    if (current) current.removeAttribute("aria-current");
+    current = active;
+    if (!active) return;
+    active.setAttribute("aria-current", "true");
+    if (nav.scrollWidth > nav.clientWidth) {
+      const r = active.getBoundingClientRect();
+      const n = nav.getBoundingClientRect();
+      nav.scrollTo({ left: nav.scrollLeft + r.left - n.left - (n.width - r.width) / 2, behavior: reduce.matches ? "auto" : "smooth" });
+    }
+  };
+  window.addEventListener("scroll", () => { if (!queued) { queued = true; requestAnimationFrame(update); } }, { passive: true });
+  window.addEventListener("resize", update);
+  update();
+}
+
 async function main() {
   const [R, Y, e57, e65] = await Promise.all(["results.json", "yield_curves.json", "ebm_y57.json", "ebm_y65.json"].map(getJSON));
   if (!R) return;
@@ -606,6 +694,7 @@ async function main() {
   if (R.main_table && Y) {
     $("results-body").hidden = false;
     renderHero(R, Y);
+    renderBrief(R);
     renderOps(R);
     renderYield(Y);
     renderMain(R);
@@ -630,6 +719,7 @@ async function main() {
 }
 
 window.addEventListener("DOMContentLoaded", () => {
+  initNav();
   const go = () => (window.Plotly ? main() : setTimeout(go, 50));
   go();
 });
