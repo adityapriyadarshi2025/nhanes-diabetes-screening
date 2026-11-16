@@ -12,12 +12,20 @@ No number on the page changed.
   LightGBM) and its table keeps all five methods.
 - **Structure.** The ten sections that follow the reasoning, from the question
   to the conclusion, are numbered. A short summary of the findings, with links
-  to the evidence, sits under the opening charts. "Try it" now follows "Who
-  the model misses", because the calculator shows why young, lean adults are
-  missed.
+  to the evidence, sits under the opening charts. The calculator section, now
+  called "Risk calculator", follows "Who the model misses", because it shows
+  why young, lean adults are missed.
+- **Calculator.** It used to recompute on every keystroke and silently kept
+  old results while a typed value was incomplete or out of range. It now
+  updates only when Calculate is pressed (or Enter), the browser checks the
+  age, height and weight ranges first, and older results are dimmed with a
+  note until the button is pressed. The pregnancy question is disabled for
+  men, since the models set it to "no" for them anyway.
+- **Wording.** "Honest" was replaced by "leakage-free" for the evaluation
+  setup, and a few headings and sentences were made plainer.
 - **Leakage ladder drawn as dots.** Bars on an axis starting at 0.70
   exaggerated the differences between steps; dots with their seed ranges and a
-  line at the honest setup show the same numbers.
+  line at the leakage-free setup show the same numbers.
 - **Group chart.** The BMI 23 versions of the rules change nothing outside
   Asian adults, so they are drawn only for that group. The EBM is left out of
   this chart to keep it readable; its numbers stay in the text and tables.

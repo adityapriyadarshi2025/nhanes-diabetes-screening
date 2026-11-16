@@ -240,13 +240,40 @@ select, input[type="number"] {
 }
 output { color: var(--ink); font-weight: 700; }
 
-.calc { display: grid; grid-template-columns: minmax(16rem, 22rem) 1fr; gap: 2rem; align-items: start; }
+.calc { display: grid; grid-template-columns: minmax(16rem, 24rem) 1fr; gap: 2rem; align-items: start; }
 .calc form { display: grid; gap: 0.75rem; background: var(--card); padding: 1.25rem; border: 1px solid var(--rule); border-radius: var(--radius); }
-.calc .row { display: grid; grid-template-columns: 1fr 9.5rem; align-items: center; gap: 0.5rem; }
+.calc .row { display: grid; grid-template-columns: 1fr 11rem; align-items: center; gap: 0.5rem; }
 .calc .row span { font-size: 0.95rem; color: var(--ink-2); }
 .calc .row input, .calc .row select { width: 100%; }
+.calc .row select:disabled { opacity: 0.45; cursor: not-allowed; }
 .calc .optional { color: var(--ink-3); font-size: 0.85rem; }
-.calc output { display: block; font-weight: 400; }
+.calc-results { position: sticky; top: 4.5rem; }
+.calc output { display: block; font-weight: 400; transition: opacity 0.15s ease; }
+.calc output.stale { opacity: 0.4; }
+.calc-actions { margin-top: 0.35rem; }
+.calc-actions button {
+  font: inherit;
+  font-weight: 650;
+  color: var(--paper);
+  background: var(--teal);
+  border: 0;
+  border-radius: 8px;
+  padding: 0.55rem 1.3rem;
+  cursor: pointer;
+}
+.calc-actions button:hover { background: #72dacf; }
+.calc-actions button:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+#calc-status {
+  margin: 0 0 0.75rem;
+  max-width: none;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.92rem;
+  color: var(--ink);
+  background: var(--raised);
+  border: 1px solid var(--rule-strong);
+  border-radius: 8px;
+}
+#calc-status:empty { display: none; }
 .probs { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1rem; margin-bottom: 1rem; }
 .prob { background: var(--card); border: 1px solid var(--rule); border-radius: var(--radius); padding: 0.95rem 1.05rem; }
 .prob b { display: block; font-size: 2.1rem; line-height: 1.1; color: var(--ink); }
@@ -272,6 +299,8 @@ footer div { max-width: calc(var(--wide) + 2rem); margin: 0 auto; padding: 1.5re
   .waffle .sub { grid-area: sub; min-height: 0; margin: 0; font-size: 0.88rem; }
   .waffle .grid { grid-area: dots; gap: 0.2rem; max-width: none; align-self: center; }
   .calc { grid-template-columns: 1fr; }
+  .calc-results { position: static; }
+  .calc .row { grid-template-columns: 1fr 10.5rem; }
   .hero { padding-top: 2.75rem; }
   h2 { font-size: 1.5rem; }
   section { padding-top: 3rem; }
@@ -279,4 +308,5 @@ footer div { max-width: calc(var(--wide) + 2rem); margin: 0 auto; padding: 1.5re
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
+  .calc output { transition: none; }
 }

@@ -85,7 +85,7 @@ function renderValidation(rows) {
 function renderLadder(R) {
   const S = R.review && R.review.leakage_ladder_summary;
   const rows = S || R.leakage_ladder;
-  const short = ["Honest: later survey, undiagnosed adults", "Random split instead of a later survey", "+ diagnosed adults counted as cases",
+  const short = ["Leakage-free: later survey, undiagnosed adults", "Random split instead of a later survey", "+ diagnosed adults counted as cases",
     "+ two questions that reveal past testing", "+ one blood value (HDL)"];
   const narrow = NARROW.matches;
   const ord = rows.map((r, i) => ({ ...r, label: short[i] || r.step })).reverse();
@@ -299,7 +299,7 @@ function renderMatched(R) {
   const lgbr = mvRow(R, "y57", "ada", "lgb");
   const us = MODELS.map((m) => mvRow(R, "y57", "uspstf", m).sens_diff_matched);
   $("matched-text").textContent = `With their 2015-2016 thresholds, the models tested between ${num(100 * Math.min(...tested), 1)} and ${num(100 * Math.max(...tested), 1)} points fewer adults than the ADA test on 2017-2020, so the pre-registered comparison was tilted slightly against them. `
-    + `At exactly equal testing they find ${pts(Math.min(...gains))} to ${pts(Math.max(...gains))} points more cases. The 95% intervals sit clearly above zero for ${list(above, "and")}, but not for ${list(below, "or")} (LightGBM ${pts(lgbr.sens_diff_matched)}, ${pts(lgbr.sens_diff_matched_lo)} to ${pts(lgbr.sens_diff_matched_hi)}). `
+    + `At exactly equal testing they find ${num(100 * Math.min(...gains), 1)} to ${num(100 * Math.max(...gains), 1)} points more cases. The 95% intervals sit clearly above zero for ${list(above, "and")}, but not for ${list(below, "or")} (LightGBM ${pts(lgbr.sens_diff_matched)}, ${pts(lgbr.sens_diff_matched_lo)} to ${pts(lgbr.sens_diff_matched_hi)}). `
     + `The PPV gains shrink to ${pts(Math.min(...ppvs))} to ${pts(Math.max(...ppvs))} points: most of the higher PPV seen with the frozen thresholds came from testing fewer people, not from choosing better. `
     + `At the USPSTF rule's share the gains stay between ${pts(Math.min(...us))} and ${pts(Math.max(...us))} points. `
     + "This comparison was pre-registered without intervals; the intervals were added after the test, following an external review, and six models are compared without adjustment. Read it as suggestive: the models probably find about 3 points more cases than the ADA test at the same number of tests, which the confirmatory test could not show.";
@@ -492,19 +492,19 @@ function renderConclusion(R) {
         ? `The difference, ${pts(h.diff)} points (95% interval ${pts(h.lo)} to ${pts(h.hi)}), supports the pre-registered hypothesis H1.`
         : `The difference, ${pts(h.diff)} points (95% interval ${pts(h.lo)} to ${pts(h.hi)}), is too small to tell apart from zero, so the pre-registered hypothesis H1 is not supported.`)
       + (mv ? ` That test kept the threshold set on 2015-2016, which on 2017-2020 tested ${num(Math.abs(100 * mv.tested_diff_frozen), 1)} points ${mv.tested_diff_frozen < 0 ? "fewer" : "more"} adults than the ADA test. `
-        + `At exactly the same number of tests the models find ${pts(Math.min(...gains))} to ${pts(Math.max(...gains))} points more cases (LightGBM ${pts(mv.sens_diff_matched)}, ${pts(mv.sens_diff_matched_lo)} to ${pts(mv.sens_diff_matched_hi)}). `
+        + `At exactly the same number of tests the models find ${num(100 * Math.min(...gains), 1)} to ${num(100 * Math.max(...gains), 1)} points more cases (LightGBM ${pts(mv.sens_diff_matched)}, ${pts(mv.sens_diff_matched_lo)} to ${pts(mv.sens_diff_matched_hi)}). `
         + "That analysis was added after the test, so it suggests a modest gain of about 3 points rather than proving one." : ""),
     `The models' AUC was higher (${auc("lgb")} against ${auc("ada_points")} for the ADA points). `
-      + (mv ? `Their higher share of cases among the people they tested mostly came from testing fewer people: at equal testing LightGBM's PPV is ${pts(mv.ppv_diff_matched)} points higher (${pts(mv.ppv_diff_matched_lo)} to ${pts(mv.ppv_diff_matched_hi)}). ` : "")
+      + (mv ? `Their higher share of cases among the people they tested mostly came from testing fewer people: at equal testing the difference in PPV for LightGBM is ${pts(mv.ppv_diff_matched)} points (${pts(mv.ppv_diff_matched_lo)} to ${pts(mv.ppv_diff_matched_hi)}). ` : "")
       + "An EBM, a plain L1 logistic regression and gradient boosting did equally well; the only step on the methods ladder that clearly helped was giving a linear model all the inputs instead of the seven ADA items. Learned curves and interactions added nothing measurable.",
     `The clearer result concerns today's screening rules. At the USPSTF 2021 rule's number of tests, LightGBM found ${pct(us.sens)} of cases against the rule's ${pct(usr.sens)} `
       + `(${pts(us.sens_diff)} points, ${pts(us.sens_diff_lo)} to ${pts(us.sens_diff_hi)}), and the ADA risk test alone found more cases than the USPSTF rule while testing no more adults. `
       + `The ADA 2026 rule finds ${pct(a26.sens)} of cases, but only by testing ${pct(a26.flag_rate)} of adults.`,
     `The models are not better everywhere. For diabetes-range HbA1c (6.5% or more) the ADA test found ${pct(ada65.sens)} of cases against ${pct(lgb65.sens)} for LightGBM, and the models found fewer cases than the ADA test among Mexican American and non-Hispanic Black adults, `
-      + "with intervals that include zero or only just exclude it. Asian adults remain the weak spot for every method except ADA 2026: about half of their cases are missed.",
-    `Honest evaluation matters. On the same 2007-2016 data, counting already-diagnosed adults as cases and adding two questions that reveal past testing lifts AUC from ${num(L[0], 3)} to ${num(L[3], 3)}, `
+      + "with intervals that include zero or only just exclude it. Under the ADA test, the USPSTF rule and every model, Asian adults are the group with the lowest share of cases found: about half of their cases are missed.",
+    `The evaluation setup matters. On the same 2007-2016 data, counting already-diagnosed adults as cases and adding two questions that reveal past testing raises AUC from ${num(L[0], 3)} to ${num(L[3], 3)}, `
       + "into the 0.82-0.89 range that published models report; a random split on its own makes no reliable difference.",
-    "For a clinic choosing whom to send for an HbA1c test, the seven-question ADA risk test comes within about 3 points of a machine-learning model trained on 18,456 survey participants. The rule that leaves cases behind is the USPSTF age-and-BMI rule.",
+    "For a clinic choosing whom to send for an HbA1c test, the seven-question ADA risk test comes within about 3 points of a machine-learning model trained on 18,456 survey participants. Of the existing rules, the USPSTF age-and-BMI rule misses the most cases.",
   ];
   $("conclusion-text").innerHTML = paras.map((p) => `<p>${p}</p>`).join("");
 }
@@ -578,7 +578,9 @@ function readForm() {
 
 function runCalculator() {
   const x = readForm();
-  if (!(x.age >= 20) || !(x.bmi > 10)) return;
+  const status = $("calc-status");
+  if (!(x.age >= 20 && x.age <= 80)) { status.textContent = "Enter an age from 20 to 80."; return; }
+  if (!(x.bmi >= 12 && x.bmi <= 90)) { status.textContent = `Height and weight give a BMI of ${num(x.bmi, 1)}. Check both values.`; return; }
   const asian = x.group === "asian";
   const r57 = ebmScore(EBM.y57, x);
   const r65 = ebmScore(EBM.y65, x);
@@ -590,21 +592,23 @@ function runCalculator() {
   const ada2026 = x.age >= 35 || (overweight && risk) || x.gdm === 1;
   const top = r57.contrib.filter((c) => Math.abs(c[1]) > 0.005 && !["arm", "leg", "pir"].includes(c[0])).sort((a, b) => Math.abs(b[1]) - Math.abs(a[1])).slice(0, 10).reverse();
   $("calc-out").innerHTML = `<div class="probs">
-      <div class="prob"><b>${pct(r57.p)}</b><span>chance of HbA1c 5.7% or more (EBM)</span></div>
-      <div class="prob"><b>${pct(r65.p, 1)}</b><span>chance of HbA1c 6.5% or more (EBM)</span></div></div>
+      <div class="prob"><b>${pct(r57.p)}</b><span>estimated chance of HbA1c 5.7% or more (EBM)</span></div>
+      <div class="prob"><b>${pct(r65.p, 1)}</b><span>estimated chance of HbA1c 6.5% or more (EBM)</span></div></div>
     <ul class="rules-out">
       <li><b>ADA risk test: ${points} of 11 points</b>, ${points >= 5 ? "test recommended (5 or more)" : "below the cut-off of 5"} <span class="note">(${parts.filter((p) => p[1] > 0).map((p) => `${p[0]} ${p[1]}`).join(", ") || "no points"})</span></li>
       <li><b>USPSTF 2021:</b> ${uspstf ? "screening recommended" : "not in the screening group"}</li>
-      <li><b>ADA 2026:</b> ${ada2026 ? "testing recommended" : "no testing recommended yet"}</li>
-      <li><b>Model threshold at the ADA test's number of tests:</b> ${r57.p >= EBM.thr ? "would be sent for a test" : "would not be sent"}</li>
+      <li><b>ADA 2026:</b> ${ada2026 ? "testing recommended" : "testing not recommended"}</li>
+      <li><b>EBM at the ADA test's number of tests:</b> ${r57.p >= EBM.thr ? "would be sent for a test" : "would not be sent for a test"}</li>
     </ul>
     <div class="chart short" id="contrib-chart"></div>
-    <p class="note">Arm, leg length and household income are not asked: they are set to typical values for your age, sex and size and left out of the chart, as is any blank field${x.filled.length ? ` (filled: ${x.filled.map((k) => PRETTY[k].toLowerCase()).join(", ")})` : ""}.</p>`;
+    <p class="note">Arm circumference and upper-leg length are not asked; they are estimated from age, sex and body size. Household income is set to the training median. These three are left out of the chart. Blank optional fields are estimated or set to the training median${x.filled.length ? ` (here: ${x.filled.map((k) => PRETTY[k].toLowerCase()).join(", ")})` : ""}.</p>`;
   plot("contrib-chart", [{
     type: "bar", orientation: "h", x: top.map((c) => c[1]), y: top.map((c) => PRETTY[c[0]] || c[0]),
     marker: { color: top.map((c) => (c[1] > 0 ? T.amber : T.blue)) }, hovertemplate: "%{y}: %{x:+.2f} log-odds<extra></extra>",
   }], layout({ margin: { l: 20, r: 20, t: 40, b: 40 }, height: 330, title: { text: "What moves this estimate (log-odds, HbA1c 5.7%+)", font: { size: 13 }, x: 0.02 },
     xaxis: { zeroline: true, zerolinecolor: T.ink, gridcolor: T.grid }, yaxis: { automargin: true, gridcolor: T.grid } }));
+  $("calc-out").classList.remove("stale");
+  status.textContent = "";
 }
 
 function initCalculator(e57, e65, R) {
@@ -612,11 +616,24 @@ function initCalculator(e57, e65, R) {
   EBM.y65 = e65;
   EBM.thr = R.frozen.thresholds["ebm|y57"].ada;
   const form = $("calc-form");
-  const g = document.createElement("div");
-  g.className = "row";
-  g.innerHTML = '<span>Group, for the screening rules only <span class="optional">optional</span></span><select name="group"><option value="">Prefer not to say</option><option value="white">Non-Hispanic White</option><option value="black">Black</option><option value="hispanic">Hispanic</option><option value="asian">Asian</option><option value="other">Other</option></select>';
-  form.appendChild(g);
-  form.addEventListener("input", runCalculator);
+  const changed = () => {
+    $("calc-out").classList.add("stale");
+    $("calc-status").textContent = "The values have changed. Press Calculate to update the results.";
+  };
+  const sex = form.elements.male;
+  const gdm = form.elements.gdm;
+  const syncGdm = () => {
+    gdm.disabled = sex.value === "1";
+    if (gdm.disabled) gdm.value = "0";
+  };
+  sex.addEventListener("change", syncGdm);
+  syncGdm();
+  form.addEventListener("input", changed);
+  form.addEventListener("change", changed);
+  form.addEventListener("submit", (ev) => {
+    ev.preventDefault();
+    runCalculator();
+  });
   runCalculator();
 }
 
@@ -633,10 +650,10 @@ function renderBrief(R) {
   const L = S ? S.map((r) => r.mean) : R.leakage_ladder.map((r) => r.auc);
   const items = [
     ["key", h.supported ? "The pre-registered test supports H1" : "The pre-registered test found no clear gain",
-      `At the ADA risk test's number of tests, LightGBM found ${pts(h.diff)} points more cases (95% interval ${pts(h.lo)} to ${pts(h.hi)}), so H1 is ${h.supported ? "supported" : "not supported"}.`,
+      `At the ADA risk test's number of tests, LightGBM found ${pct(h.sens_model, 1)} of cases and the ADA test ${pct(h.sens_ada, 1)}: ${pts(h.diff)} points (95% interval ${pts(h.lo)} to ${pts(h.hi)}), so H1 is ${h.supported ? "supported" : "not supported"}.`,
       "#results", "The confirmatory result"],
-    mv && ["", `At exactly equal testing, the models find ${pts(Math.min(...gains))} to ${pts(Math.max(...gains))} points more`,
-      `With every threshold re-set to test the same share as the ADA test, LightGBM gains ${pts(mv.sens_diff_matched)} (${pts(mv.sens_diff_matched_lo)} to ${pts(mv.sens_diff_matched_hi)}). Added after the test, so suggestive only.`,
+    mv && ["", `With equal numbers of tests, the models find ${num(100 * Math.min(...gains), 1)} to ${num(100 * Math.max(...gains), 1)} points more cases`,
+      `With every threshold re-set so that each model tests the same share of adults as the ADA test, the LightGBM difference is ${pts(mv.sens_diff_matched)} points (${pts(mv.sens_diff_matched_lo)} to ${pts(mv.sens_diff_matched_hi)}). This analysis was added after the test, so it is suggestive only.`,
       "#equal-testing", "Same number of tests"],
     ["", "The USPSTF 2021 rule misses the most cases",
       `It found ${pct(usr.sens)} of cases while testing ${pct(usr.flag_rate)} of adults. At the same number of tests LightGBM found ${pct(us.sens)}: ${pts(us.sens_diff)} points (${pts(us.sens_diff_lo)} to ${pts(us.sens_diff_hi)}).`,
@@ -647,8 +664,8 @@ function renderBrief(R) {
     g("Non-Hispanic Asian", "lgb") && ["", "About half of Asian adults' cases are missed",
       `The ADA test found ${pct(g("Non-Hispanic Asian", "ada_flag").sens)} of their cases (${pct(g("Non-Hispanic Asian", "ada_flag_asian23").sens)} with a BMI 23 cut-off) and LightGBM ${pct(g("Non-Hispanic Asian", "lgb").sens)}, against ${pct(g("Non-Hispanic White", "ada_flag").sens)} among non-Hispanic White adults.`,
       "#groups", "Groups of adults"],
-    ["", `Common shortcuts lift AUC from ${num(L[0], 3)} to ${num(L[3], 3)}`,
-      "Counting already-diagnosed adults as cases and adding two questions that reveal past testing reach the range published models report; a random split alone makes no reliable difference.",
+    ["", `Leaky evaluation raises AUC from ${num(L[0], 3)} to ${num(L[3], 3)}`,
+      "Counting already-diagnosed adults as cases and adding two questions that reveal past testing bring AUC into the range published models report. A random split on its own makes no reliable difference.",
       "#ladder", "Leakage ladder"],
   ].filter(Boolean);
   $("brief-list").innerHTML = items.map(([cls, title, body, href, link]) => `<li${cls ? ` class="${cls}"` : ""}><strong>${title}</strong><span>${body}</span><a href="${href}">${link}</a></li>`).join("");
