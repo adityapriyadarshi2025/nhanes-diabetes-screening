@@ -2,7 +2,7 @@
 
 Status: **final**. Written on 19 Oct 2026, after the week-1 data checks on
 2007-2016 and before any model was fitted; the 2017-March 2020 outcomes were
-never read. First committed on 28 Oct 2026 (commit `22d485a`, with the week-1
+never read. First committed on 28 Oct 2026 (commit `9384577`, with the week-1
 data pipeline); that commit, not the writing date, is the verifiable time
 stamp. Any later change is listed under "Changes" with its date and reason.
 
@@ -135,3 +135,7 @@ the site.
   status line now separates the writing date (19 Oct) from the first commit
   (28 Oct), because only the commit can be checked. No question, hypothesis,
   rule or metric changed.
+- 17 Nov 2026: the first commit's message was reworded, which gave every
+  commit a new hash. The commit cited above changed from `22d485a` to
+  `9384577`; its files and its 28 Oct date are unchanged. No question,
+  hypothesis, rule or metric changed.

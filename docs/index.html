@@ -131,7 +131,7 @@
       </tbody>
     </table>
   </div>
-  <p class="note">LightGBM and L1 settings were chosen by rolling-origin tuning; the EBM settings were fixed in advance. Every model is recalibrated on 2015-2016 with Platt scaling. Methods: L1 logistic regression (Tibshirani 1996), EBM (Lou et al. 2013; Nori et al. 2019), LightGBM (Ke et al. 2017), the value model's distributional approach (Peacock et al. 2012) and Platt scaling (Platt 1999); see <a href="#references">References</a>. Code: <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/src/scores.py">rules and ADA points</a>, <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/src/models.py">models</a>, <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/src/fit.py">tuning and calibration</a>, <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/results/validation/tuning_grid.csv">full tuning grid</a>.</p>
+  <p class="note">LightGBM and L1 settings were chosen by rolling-origin tuning; the EBM settings were fixed in advance. Every model is recalibrated on 2015-2016 with Platt scaling. Code: <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/src/scores.py">rules and ADA points</a>, <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/src/models.py">models</a>, <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/src/fit.py">tuning and calibration</a>, <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/blob/main/results/validation/tuning_grid.csv">full tuning grid</a>.</p>
   <p class="note" id="grid-text">The chosen LightGBM settings sat on the edge of the pre-registered grid (15 leaves; minimum leaf 50 and L2 penalty 5 for 5.7%+, minimum leaf 200 for 6.5%+). A check added after review tried settings beyond those edges, tuned the same way: the best one for 5.7%+ (7 leaves, minimum leaf 25, L2 20) lowers mean validation log-loss by 0.00004 (0.01%); the best one for 6.5%+ (15 leaves, minimum leaf 400, L2 0) lowers mean validation log-loss by 0.00039 (0.32%). The frozen models were kept.</p>
 </section>
 
@@ -164,7 +164,7 @@
 <section class="step" id="results">
   <h2>Results on 2017-March 2020</h2>
   <div class="callout" id="h1-callout"><strong>H1 not supported: the model's gain is too small to tell apart from zero.</strong>With its threshold set on 2015-2016 to test as many adults as the ADA risk test, the LightGBM classifier found 70.5% of adults with HbA1c of 5.7% or more in 2017-2020, against 69.2% for the ADA test: +1.3 points (95% interval −1.4 to +3.8). This was the one confirmatory test fixed in the pre-registration. The EBM (+1.4 points, −0.9 to +3.9) and the same test without adults who answered "borderline" (+1.4, −1.4 to +4.0) agree. On 2017-2020 the frozen threshold also tested 1.5 points fewer adults than the ADA test (−3.0 to 0.0), so this comparison slightly favoured the ADA test. With the threshold re-set so both test exactly the same share, LightGBM finds +2.6 points (−0.3 to +5.9); see "Same number of tests" below.</div>
-  <p class="note">The models were frozen at 02:57 IST on 14 Nov 2026 and committed at 03:16 (<a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/commit/b88cb3b9001334c9e9c404c9b4e5e286815d4b4b">commit b88cb3b</a>). The test survey's HbA1c values were opened once, at 03:19, after a script checked every model file and the sealed labels against their recorded hashes.</p>
+  <p class="note">The models were frozen at 02:57 IST on 14 Nov 2026 and committed at 03:16 (<a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/commit/e8a482ec3c8ce8212458cb7f60455849f200d7d7">commit e8a482e</a>). The test survey's HbA1c values were opened once, at 03:19, after a script checked every model file and the sealed labels against their recorded hashes.</p>
   <p class="note">Full result tables: <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/tree/main/results/test">results/test/</a> for the one-time test and <a href="https://github.com/adityapriyadarshi2025/nhanes-diabetes-screening/tree/main/results/review">results/review/</a> for the analyses added after it.</p>
   <div id="results-body">
     <h3 id="by-rule">Cases found at each screening rule's number of tests</h3>
@@ -311,14 +311,7 @@ python -m src.export_web &amp;&amp; python scripts/prerender.py</code></pre>
     <li>Bergenstal RM, Gal RL, Connor CG, et al. Racial differences in the relationship of glucose concentrations and hemoglobin A1c levels. Ann Intern Med. 2017;167(2):95-102.</li>
     <li>Sun et al. 2026. <a href="https://arxiv.org/abs/2606.16056">arXiv:2606.16056</a>.</li>
     <li>Heshmat Feizabadi N, Tahmasbi V, Yeganeh A, Shongwe SC. Explainable machine learning for diabetes screening using NHANES 2021-2023 data: a leakage-controlled classification study. Math Comput Appl. 2026;31(5):221. <a href="https://doi.org/10.3390/mca31050221">doi:10.3390/mca31050221</a></li>
-    <li>Tibshirani R. Regression shrinkage and selection via the lasso. J R Stat Soc B. 1996;58(1):267-288.</li>
-    <li>Lou Y, Caruana R, Gehrke J, Hooker G. Accurate intelligible models with pairwise interactions. Proceedings of KDD 2013.</li>
-    <li>Nori H, Jenkins S, Koch P, Caruana R. InterpretML: a unified framework for machine learning interpretability. <a href="https://arxiv.org/abs/1909.09223">arXiv:1909.09223</a>; 2019.</li>
-    <li>Ke G, Meng Q, Finley T, et al. LightGBM: a highly efficient gradient boosting decision tree. Advances in Neural Information Processing Systems 30 (NeurIPS 2017).</li>
-    <li>Peacock JL, Sauzet O, Ewings SM, Kerry SM. Dichotomising continuous data while retaining statistical power using a distributional approach. Stat Med. 2012;31(26):3089-3103.</li>
-    <li>Platt J. Probabilistic outputs for support vector machines and comparisons to regularized likelihood methods. In: Advances in Large Margin Classifiers. MIT Press; 1999.</li>
-    <li>Rao JNK, Wu CFJ. Resampling inference with complex survey data. J Am Stat Assoc. 1988;83(401):231-241.</li>
-    <li>Software: pandas, NumPy, scikit-learn (Pedregosa et al., JMLR 2011), LightGBM, interpret-core, Plotly.js 2.35.2 and Playwright.</li>
+    <li>Software: pandas, NumPy, scikit-learn, LightGBM, interpret-core, Plotly.js 2.35.2 and Playwright.</li>
   </ul>
 </section>
 

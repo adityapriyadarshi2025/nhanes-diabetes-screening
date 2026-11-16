@@ -25,7 +25,7 @@ the one-time test (2017-March 2020).
 ## Result
 
 The one-time test on 2017-March 2020 ran on 14 Nov 2026, after the models were
-frozen (`FROZEN.md`, commit `b88cb3b`).
+frozen (`FROZEN.md`, commit `e8a482e`).
 
 - **H1, the pre-registered confirmatory test, is not supported.** At the ADA
   risk test's number of tests, the LightGBM classifier found 70.5% of adults
@@ -192,26 +192,6 @@ Studies used as checks or context
   learning for diabetes screening using NHANES 2021-2023 data: a
   leakage-controlled classification study. Math Comput Appl. 2026;31(5):221.
   doi:10.3390/mca31050221
-
-Methods
-- Tibshirani R. Regression shrinkage and selection via the lasso. J R Stat Soc
-  B. 1996;58(1):267-288.
-- Lou Y, Caruana R, Gehrke J, Hooker G. Accurate intelligible models with
-  pairwise interactions. Proceedings of KDD 2013.
-- Nori H, Jenkins S, Koch P, Caruana R. InterpretML: a unified framework for
-  machine learning interpretability. arXiv:1909.09223; 2019.
-- Ke G, Meng Q, Finley T, et al. LightGBM: a highly efficient gradient boosting
-  decision tree. Advances in Neural Information Processing Systems 30 (2017).
-- Peacock JL, Sauzet O, Ewings SM, Kerry SM. Dichotomising continuous data while
-  retaining statistical power using a distributional approach. Stat Med.
-  2012;31(26):3089-3103.
-- Platt J. Probabilistic outputs for support vector machines and comparisons to
-  regularized likelihood methods. In: Advances in Large Margin Classifiers. MIT
-  Press; 1999.
-- Rao JNK, Wu CFJ. Resampling inference with complex survey data. J Am Stat
-  Assoc. 1988;83(401):231-241.
-- Pedregosa F, et al. Scikit-learn: machine learning in Python. J Mach Learn
-  Res. 2011;12:2825-2830.
 
 Software: pandas, NumPy, SciPy, scikit-learn, LightGBM, interpret-core, PyArrow,
 Matplotlib, Plotly.js 2.35.2 and Playwright.

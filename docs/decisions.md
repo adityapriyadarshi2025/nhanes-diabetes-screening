@@ -2,6 +2,15 @@
 
 Newest first. Each entry: what was decided and why.
 
+## 17 Nov 2026
+
+- **Commit hashes.** The first commit's message was reworded, from "Week 1:
+  data pipeline, baselines and pre-registration" to "data pipeline,
+  baselines". That gave every commit a new hash, while each commit kept its
+  files and its dates. The hashes cited in `PREREG.md`, the README, this log
+  and the website were updated: the pre-registration commit `22d485a` is now
+  `9384577`, and the freeze commit `b88cb3b` is now `e8a482e`.
+
 ## 16 Nov 2026 (website)
 
 No number on the page changed.
@@ -91,7 +100,7 @@ threshold or confirmatory result changed.
 ## 14 Nov 2026 (week 4, one-time test)
 
 - **Test run once** with `python -m src.test_once` at 03:19 IST, three minutes
-  after the freeze commit `b88cb3b` (03:16 IST). Before reading the labels the
+  after the freeze commit `e8a482e` (03:16 IST). Before reading the labels the
   script checked all 13 model files against `models/frozen.json` and the sealed
   labels against the hash in `PREREG.md`. It writes
   `results/test/UNSEALED.txt` and refuses to run a second time.
