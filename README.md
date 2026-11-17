@@ -166,6 +166,7 @@ data/      raw/ codebooks/ processed/   (not in git, except data/raw/manifest.cs
 - Claude Code helped debug the code of the core model.
 - Claude was used to explain things like `.pkl` files and other concepts that I
   did not know.
+- Claude Code helped build the website.
 
 ## References
 
