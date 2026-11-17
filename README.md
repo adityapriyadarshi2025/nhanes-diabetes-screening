@@ -155,6 +155,18 @@ results/   week1/       data checks before any model
 data/      raw/ codebooks/ processed/   (not in git, except data/raw/manifest.csv)
 ```
 
+## AI-use disclosure
+
+- Claude was used to find the datasets on the internet and download the best
+  ones.
+- Claude Code was used to clean up the datasets. I gave it what to do, and it
+  wrote the code to clean up the dataset.
+- Claude helped me evaluate my plan: whether it is feasible, whether the idea
+  is good, or whether it needs some improvements.
+- Claude Code helped debug the code of the core model.
+- Claude was used to explain things like `.pkl` files and other concepts that I
+  did not know.
+
 ## References
 
 Data
